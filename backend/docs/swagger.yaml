@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: ART Tracker API
+  title: LumiRise API
   version: 1.0.0
   description: API for managing modules, enrollments, and user authentication.
 
