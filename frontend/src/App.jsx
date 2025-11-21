@@ -4,19 +4,19 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
 
 import CreatePage from "./pages/CreatePage";
 import EditModule from "./pages/EditModule";
 import ViewModuleDetails from "./components/Module/ViewModuleDetails";
 
 // Role-specific dashboards
-import StudentHome from "./pages/StudentHome";
-import TutorHome from "./pages/TutorHome";
+import StudentHome from "./pages/student/StudentHome";
+import TutorHome from "./pages/tutor/TutorHome";
 import DailyJournal from "./pages/DailyJournal";
 import Layout from "./components/layout/Layout";
-import AdminHome from "./pages/AdminHome";
+import AdminHome from "./pages/admin/AdminHome";
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {

@@ -149,7 +149,7 @@ const LandingPage = () => {
       <FeaturedModules modules={featuredModules}  />
 
       {/* Testimonials Section */}
-      <Box py={0} bg="red.100">
+      <Box py={0} >
         <Testimonials />
       </Box>
 

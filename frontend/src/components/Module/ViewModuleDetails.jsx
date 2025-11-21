@@ -20,10 +20,23 @@ import {
 import { CheckCircleIcon, InfoIcon } from "@chakra-ui/icons";
 
 import { useAuthStore } from "../../store/auth";
+
 const ViewModuleDetails = ({ isOpen, onClose, module }) => {
-    const { currentUser } = useAuthStore();
-      const role = currentUser?.role || "visitor";
+  const { currentUser } = useAuthStore();
+  const role = currentUser?.role || "visitor";
+
   if (!module) return null;
+
+  // --- Counting logic ---
+  const totalLessons = module.lessons?.length || 0;
+  const totalMCQs = module.lessons?.reduce(
+    (sum, lesson) => sum + (lesson.mcqs?.length || 0),
+    0
+  );
+  const totalTasks = module.lessons?.reduce(
+    (sum, lesson) => sum + (lesson.tasks?.length || 0),
+    0
+  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="2xl">
@@ -34,22 +47,22 @@ const ViewModuleDetails = ({ isOpen, onClose, module }) => {
             <Text fontWeight="bold">{module.title}</Text>
 
             {role !== "student" && (
-             <Badge
-              colorScheme={
-                module.status === "Published"
-                  ? "green"
-                  : module.status === "Pending"
-                  ? "yellow"
-                  : module.status === "Rejected"
-                  ? "red"
-                  : "gray"
-              }
-              borderRadius="md"
-              px={3}
-              py={1}
-            >
-              {module.status}
-            </Badge>
+              <Badge
+                colorScheme={
+                  module.status === "Published"
+                    ? "green"
+                    : module.status === "Pending"
+                    ? "yellow"
+                    : module.status === "Rejected"
+                    ? "red"
+                    : "gray"
+                }
+                borderRadius="md"
+                px={3}
+                py={1}
+              >
+                {module.status}
+              </Badge>
             )}
           </HStack>
         </ModalHeader>
@@ -58,7 +71,6 @@ const ViewModuleDetails = ({ isOpen, onClose, module }) => {
 
         <ModalBody>
           <VStack align="start" spacing={4}>
-
             {/* description */}
             <Box>
               <Text fontWeight="medium" mb={1}>Description</Text>
@@ -114,15 +126,15 @@ const ViewModuleDetails = ({ isOpen, onClose, module }) => {
             <HStack spacing={8}>
               <Box>
                 <Text fontWeight="medium">Lessons</Text>
-                <Badge colorScheme="gray">{module.totalLessons}</Badge>
+                <Badge colorScheme="gray">{totalLessons}</Badge>
               </Box>
               <Box>
                 <Text fontWeight="medium">MCQs</Text>
-                <Badge colorScheme="gray">{module.totalMCQs}</Badge>
+                <Badge colorScheme="gray">{totalMCQs}</Badge>
               </Box>
               <Box>
                 <Text fontWeight="medium">Tasks</Text>
-                <Badge colorScheme="gray">{module.totalTasks}</Badge>
+                <Badge colorScheme="gray">{totalTasks}</Badge>
               </Box>
             </HStack>
 
@@ -140,10 +152,10 @@ const ViewModuleDetails = ({ isOpen, onClose, module }) => {
             <Divider />
 
             {/* pending edit/delete */}
-            {module.pendingEdit?.isRequested && role !== "student"&& (
+            {module.pendingEdit?.isRequested && role !== "student" && (
               <Badge colorScheme="yellow">Edit Requested</Badge>
             )}
-            {module.pendingDelete?.isRequested && role !== "student"&&(
+            {module.pendingDelete?.isRequested && role !== "student" && (
               <Badge colorScheme="red">Delete Requested</Badge>
             )}
 
@@ -158,7 +170,6 @@ const ViewModuleDetails = ({ isOpen, onClose, module }) => {
                 Updated: {new Date(module.updatedAt).toLocaleString()}
               </Text>
             </Box>
-
           </VStack>
         </ModalBody>
       </ModalContent>

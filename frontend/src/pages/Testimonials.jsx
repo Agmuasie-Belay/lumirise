@@ -7,7 +7,7 @@ const Testimonials = () => {
       name: "John Doe",
       role: "Full Stack Developer",
       feedback:
-        "LuminaSpark transformed my coding skills. The modules are clear, practical, and fun!",
+        "LuminiRise transformed my coding skills. The modules are clear, practical, and fun!",
     },
     {
       name: "Jane Smith",
@@ -37,7 +37,7 @@ const Testimonials = () => {
   };
 
   return (
-    <Box py={20} bg="gray.50" minH="100vh">
+    <Box py={20} bg="gray.100" >
       <Heading textAlign="center" mb={12} fontSize="4xl">
         What Our Students Say
       </Heading>
@@ -47,15 +47,15 @@ const Testimonials = () => {
           <Box
             key={idx}
             display="flex"
-            justifyItems="center" // center the inner box horizontally
+            justifyItems="center" 
           >
             <Box
               p={8}
               bg="white"
               borderRadius="lg"
               shadow="md"
-              maxW="2xl" // limit the width so it doesn't stretch
-              w="full" // take full width up to maxW
+              maxW="2xl" 
+              w="full" 
               textAlign="center"
             >
               <VStack spacing={4}>

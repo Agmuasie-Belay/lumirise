@@ -1,10 +1,10 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import DashboardStats from "./admin/DashboardStats";
-import ModulesManagement from "./admin/ModulesManagement";
-import TutorsManagement from "./admin/TutorsManagement";
-import StudentsManagement from "./admin/StudentsManagement";
-import RecentActivity from "./admin/RecentActivity";
-import ReportsAnalytics from "./admin/ReportsAnalytics";
+import DashboardStats from "./DashboardStats";
+import ModulesManagement from "./ModulesManagement";
+import TutorsManagement from "./TutorsManagement";
+import StudentsManagement from "./StudentsManagement";
+import RecentActivity from "./RecentActivity";
+import ReportsAnalytics from "./ReportsAnalytics";
 
 const AdminHome = () => {
   return (

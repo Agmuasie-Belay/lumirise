@@ -12,6 +12,7 @@ export const useModuleStore = create((set, get) => ({
  createModule: async (newModule) => {
   try {
     const userRole = JSON.parse(localStorage.getItem("role"));
+    const tutorId = JSON.parse(localStorage.getItem("user"))?.id;
     const token = localStorage.getItem("token");
 
     if (userRole !== "tutor") {
@@ -22,22 +23,53 @@ export const useModuleStore = create((set, get) => ({
     if (!title || !description) {
       return { success: false, message: "Please provide all required fields: title, description" };
     }
-    console.log(newModule.tasks)
+    //Clean arrays and ensure MCQs are well-structured
+    // Assuming you have `newModule` state object with all module info
+const moduleToSend = {
+  title: newModule.title.trim(),
+  description: newModule.description.trim(),
+  objectives: (newModule.objectives || [])
+    .map(o => o.trim())
+    .filter(Boolean),
+  tutor: tutorId, // the current logged-in tutor's ID
+  difficulty: newModule.difficulty,
+  category: newModule.category.trim(),
+  tags: (newModule.tags || []).map(t => t.trim()).filter(Boolean),
+  status: "Draft", // default status
 
-    // Clean arrays and ensure MCQs are well-structured
-    // const moduleToSend = {
-    //   ...newModule,
-    //   objectives: newModule.objectives?.map((o) => o.trim()).filter(Boolean) || [],
-    //   videoLinks: newModule.videoLinks?.map((v) => v.trim()).filter(Boolean) || [],
-    //   readingFileLinks: newModule.readingFileLinks?.map((r) => r.trim()).filter(Boolean) || [],
-    //   tasks: newModule.tasks?.map((t) => t.trim()).filter(Boolean) || [],
-    //   mcqs: newModule.mcqs?.map((m) => ({
-    //     question: m.question?.trim() || "",
-    //     options: m.options?.map((o) => o.trim()).filter(Boolean) || [],
-    //     answer: m.answer?.trim() || "",
-    //   })) || [],
-    //   status: "Draft", // default status
-    // };
+  // Merge lessons with their tasks and MCQs
+  lessons: (newModule.lessons || []).map((lesson, idx) => ({
+    title: lesson.title.trim(),
+    body: lesson.body.trim(),
+    order: lesson.order ?? idx + 1,
+    videoLinks: (lesson.videoLinks || []).filter(v => v.trim() !== ""),
+    readingFiles: (lesson.readingFiles || []).filter(r => r.trim() !== ""),
+
+    // Include only tasks that belong to this lesson
+    tasks: (newModule.tasks || [])
+      .filter(t => t.lessonOrder === lesson.order)
+      .map(t => ({
+        title: t.title.trim(),
+        description: t.description.trim(),
+        required: t.required ?? true,
+        order: t.order ?? 1
+      })),
+
+    // Include only MCQs that belong to this lesson
+    mcqs: (newModule.mcqs || [])
+      .filter(m => m.lessonOrder === lesson.order)
+      .map(m => ({
+        question: m.question.trim(),
+        options: (m.options || []).filter(o => o.trim() !== ""),
+        correctAnswer: m.answer.trim(),
+        order: m.order ?? 1
+      }))
+  }))
+};
+
+// Send to backend
+
+
     // =============================================
 // CLEAN + MODEL-COMPLIANT MODULE BUILDER
 // =============================================
@@ -91,31 +123,31 @@ const cleanedLessons = Array.isArray(newModule.lessons)
 // =============================================
 // FINAL CLEAN MODULE OBJECT TO SEND TO API
 // =============================================
-const moduleToSend = {
-  title: safeTrim(newModule.title),
-  description: safeTrim(newModule.description),
+// moduleToSend = {
+//   title: safeTrim(newModule.title),
+//   description: safeTrim(newModule.description),
 
-  objectives: Array.isArray(newModule.objectives)
-    ? newModule.objectives.map(safeTrim).filter(Boolean)
-    : [],
+//   objectives: Array.isArray(newModule.objectives)
+//     ? newModule.objectives.map(safeTrim).filter(Boolean)
+//     : [],
 
-  tutor: newModule.tutor, 
+//   tutor: newModule.tutor, 
 
-  lessons: cleanedLessons,
+//   lessons: cleanedLessons,
 
-  hourlyRate: newModule.hourlyRate ?? null,
-  category: safeTrim(newModule.category) || "",
-  difficulty: newModule.difficulty || "beginner",
+//   hourlyRate: newModule.hourlyRate ?? null,
+//   category: safeTrim(newModule.category) || "",
+//   difficulty: newModule.difficulty || "beginner",
 
-  tags: Array.isArray(newModule.tags)
-    ? newModule.tags.map(safeTrim).filter(Boolean)
-    : [],
+//   tags: Array.isArray(newModule.tags)
+//     ? newModule.tags.map(safeTrim).filter(Boolean)
+//     : [],
 
-  startDate: newModule.startDate || null,
-  endDate: newModule.endDate || null,
+//   startDate: newModule.startDate || null,
+//   endDate: newModule.endDate || null,
 
-  status: "Draft",
-};
+//   status: "Draft",
+// };
 
 
     const data = await apiFetch(`${API_URL}/api/modules`, {
@@ -151,7 +183,7 @@ const moduleToSend = {
     const userId = JSON.parse(localStorage.getItem("user"))?.id;
 
     let filteredModules = data.data;
-
+    console.log(filteredModules)
     if (userRole === "student") {
       // Students see only approved/published modules
       filteredModules = filteredModules.filter((m) => m.status === "Published");

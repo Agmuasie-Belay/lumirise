@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./student/Dashboard";
-import Modules from "./student/Modules";
-import Journal from "./student/Journal";
+import Dashboard from "./Dashboard";
+import Modules from "./Modules";
+import Journal from "./Journal";
 
 const StudentHome = () => {
   return (

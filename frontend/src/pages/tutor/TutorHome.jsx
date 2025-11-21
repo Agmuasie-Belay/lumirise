@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import TutorDashboard from "./tutor/TutorDashboard";
-import Student from "./tutor/Students";
+import TutorDashboard from "./TutorDashboard";
+import Student from "./Students";
 
-import MyModules from "./tutor/MyModules";
+import MyModules from "./MyModules";
 const TutorHome = () => {
   return (
     <Routes>

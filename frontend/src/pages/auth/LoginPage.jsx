@@ -18,7 +18,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { useAuthStore } from "../store/auth"; 
+import { useAuthStore } from "../../store/auth"; 
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({

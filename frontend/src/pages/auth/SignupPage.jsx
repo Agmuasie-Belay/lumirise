@@ -23,7 +23,7 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useAuthStore } from "../store/auth";
+import { useAuthStore } from "../../store/auth";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
