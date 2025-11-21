@@ -1,5 +1,5 @@
 import { create } from "zustand";
-
+const API_URL = process.env.REACT_APP_API_URL;
 export const useUserStore = create((set) => ({
   users: [],
   currentUser: null,
@@ -7,13 +7,13 @@ export const useUserStore = create((set) => ({
   setUsers: (users) => set({ users }),
 
   fetchUsers: async () => {
-    const res = await fetch("http://localhost:3000/api/users");
+    const res = await fetch(`${API_URL}/api/users`);
     const data = await res.json();
     set({ users: data.data });
   },
 
   deleteUser: async (user_id) => {
-    const res = await fetch(`http://localhost:3000/api/users/${user_id}`, {
+    const res = await fetch(`${API_URL}/api/users/${user_id}`, {
       method: "DELETE",
     });
 
@@ -27,7 +27,7 @@ export const useUserStore = create((set) => ({
   },
 
   updateUser: async (user_id, updatedUser) => {
-    const res = await fetch(`http://localhost:3000/api/users/${user_id}`, {
+    const res = await fetch(`${API_URL}/api/users/${user_id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedUser),

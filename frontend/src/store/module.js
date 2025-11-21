@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { apiFetch } from "./api";
-
+const API_URL = process.env.REACT_APP_API_URL;
 export const useModuleStore = create((set, get) => ({
   modules: [],
   setModules: (modules) => set({ modules }),
@@ -98,7 +98,7 @@ const moduleToSend = {
     ? newModule.objectives.map(safeTrim).filter(Boolean)
     : [],
 
-  tutor: newModule.tutor, // must be passed from frontend
+  tutor: newModule.tutor, 
 
   lessons: cleanedLessons,
 
@@ -117,7 +117,7 @@ const moduleToSend = {
 };
 
 
-    const data = await apiFetch("http://localhost:5000/api/modules", {
+    const data = await apiFetch(`${API_URL}/api/modules`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,7 +130,6 @@ const moduleToSend = {
       return { success: false, message: data.message || "Failed to create module" };
     }
 
-    // Update the Zustand store
     set((state) => ({ modules: [...state.modules, data.data] }));
 
     return { success: true, message: "Module created successfully", data: data.data };
@@ -146,7 +145,7 @@ const moduleToSend = {
   // -------------------------
  fetchModules: async () => {
   try {
-    const data = await apiFetch("http://localhost:5000/api/modules");
+    const data = await apiFetch(`${API_URL}/api/modules`);
     const userRole = JSON.parse(localStorage.getItem("role"));
     const userId = JSON.parse(localStorage.getItem("user"))?.id;
 
@@ -177,7 +176,7 @@ const moduleToSend = {
   // -------------------------
   deleteModule: async (module_id) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}`, { method: "DELETE" });
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}`, { method: "DELETE" });
       set((state) => ({ modules: state.modules.filter((m) => m._id !== module_id) }));
       return { success: true, message: data.message };
     } catch (error) {
@@ -190,7 +189,7 @@ const moduleToSend = {
   // -------------------------
   updateModule: async (module_id, updatedModule) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}`, {
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}`, {
         method: "PUT",
         body: JSON.stringify(updatedModule),
       });
@@ -208,7 +207,7 @@ const moduleToSend = {
   // -------------------------
   enrollModule: async (module_id) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/enroll`, { method: "POST" });
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/enroll`, { method: "POST" });
       return { success: true, message: data.message };
     } catch (error) {
       return { success: false, message: error.message };
@@ -220,7 +219,7 @@ const moduleToSend = {
   // -------------------------
   recordActivity: async (module_id, progress) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/progress`, {
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/progress`, {
         method: "PUT",
         body: JSON.stringify({ progress }),
       });
@@ -240,7 +239,7 @@ const moduleToSend = {
   // -------------------------
   giveFeedback: async (module_id, payload) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/feedback`, {
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/feedback`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -262,7 +261,7 @@ const moduleToSend = {
   // -------------------------
   approveModule: async (module_id) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/approve`, { method: "PUT" });
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/approve`, { method: "PUT" });
       set((state) => ({
         modules: state.modules.map((m) => (m._id === module_id ? { ...m, status: "approved" } : m)),
       }));
@@ -274,7 +273,7 @@ const moduleToSend = {
 
   rejectModule: async (module_id) => {
     try {
-      const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/reject`, { method: "PUT" });
+      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/reject`, { method: "PUT" });
       set((state) => ({
         modules: state.modules.map((m) => (m._id === module_id ? { ...m, status: "rejected" } : m)),
       }));
@@ -288,7 +287,7 @@ const moduleToSend = {
 // -------------------------
 requestApproval: async (module_id) => {
   try {
-    const data = await apiFetch(`http://localhost:5000/api/modules/${module_id}/request-approval`, { method: "PUT" });
+    const data = await apiFetch(`${API_URL}/api/modules/${module_id}/request-approval`, { method: "PUT" });
     set((state) => ({
       modules: state.modules.map((m) => 
         m._id === module_id ? { ...m, status: "Pending" } : m

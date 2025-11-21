@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
+const API_URL = process.env.REACT_APP_API_URL;
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -16,7 +16,7 @@ export const useAuthStore = create(
             return { success: false, message: "Please provide all values" };
           }
 
-          const res = await fetch("http://localhost:5000/api/auth/signup", {
+          const res = await fetch(`${API_URL}/api/auth/signup`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(newUser),
@@ -44,7 +44,7 @@ export const useAuthStore = create(
         }
 
         try {
-          const res = await fetch("http://localhost:5000/api/auth/login", {
+          const res = await fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
@@ -85,7 +85,7 @@ export const useAuthStore = create(
           if (!email) return { success: false, message: "Email is required" };
 
           const res = await fetch(
-            "http://localhost:5000/api/auth/send-reset-email",
+            `${API_URL}/api/auth/send-reset-email`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -118,7 +118,7 @@ export const useAuthStore = create(
       resetPassword: async (token, newPassword) => {
         try {
           const res = await fetch(
-            `http://localhost:5000/api/auth/reset-password/${token}`,
+            `${API_URL}/api/auth/reset-password/${token}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
