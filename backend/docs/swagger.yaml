@@ -1,0 +1,488 @@
+openapi: 3.1.0
+info:
+  title: ART Tracker API
+  version: 1.0.0
+  description: API for managing modules, enrollments, and user authentication.
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [student, tutor, admin]
+        profilePicture:
+          type: string
+          nullable: true
+        visionStatement:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+          nullable: true
+        availability:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - role
+
+    Module:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        tutor:
+          type: string
+        status:
+          type: string
+          enum: [Draft, Pending, Published]
+        enrolledStudents:
+          type: array
+          items:
+            type: string
+        tasks:
+          type: array
+          items:
+            type: object
+        mcqs:
+          type: array
+          items:
+            type: object
+        pendingEdit:
+          type: object
+          properties:
+            isRequested:
+              type: boolean
+            updatedFields:
+              type: object
+            requestedAt:
+              type: string
+              format: date-time
+        pendingDelete:
+          type: object
+          properties:
+            isRequested:
+              type: boolean
+            requestedAt:
+              type: string
+              format: date-time
+      required:
+        - id
+        - title
+        - tutor
+        - status
+
+    ModuleEnrollment:
+      type: object
+      properties:
+        id:
+          type: string
+        student:
+          type: string
+        module:
+          type: string
+        tutor:
+          type: string
+        hourlyRate:
+          type: number
+        expectedEndDate:
+          type: string
+          format: date
+        progressPercent:
+          type: number
+        completedTasks:
+          type: array
+          items:
+            type: string
+        completedMCQs:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - student
+        - module
+        - tutor
+        - progressPercent
+
+    Feedback:
+      type: object
+      properties:
+        student:
+          type: string
+        tutor:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+paths:
+  /signup:
+    post:
+      summary: Signup new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                phone:
+                  type: string
+                  nullable: true
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [student, tutor]
+                visionStatement:
+                  type: string
+                documents:
+                  type: object
+              required:
+                - name
+                - password
+                - role
+      responses:
+        '201':
+          description: Signup successful, verification sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+        '500':
+          description: Server error
+
+  /login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                emailOrPhone:
+                  type: string
+                password:
+                  type: string
+              required:
+                - emailOrPhone
+                - password
+      responses:
+        '200':
+          description: Login successful
+        '400':
+          description: Invalid credentials
+        '403':
+          description: Account not verified
+        '500':
+          description: Server error
+
+  /modules:
+    post:
+      summary: Create new module (tutor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+      responses:
+        '201':
+          description: Module created successfully
+        '400':
+          description: Validation error / duplicate title
+        '500':
+          description: Server error
+    get:
+      summary: Get all modules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of modules
+        '500':
+          description: Server error
+
+  /modules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get module details
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Module details
+        '404':
+          description: Module not found
+    put:
+      summary: Update module (tutor/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Module updated / edit request submitted
+        '403':
+          description: Not authorized
+        '404':
+          description: Module not found
+        '500':
+          description: Server error
+    delete:
+      summary: Delete module (tutor/admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Module deleted / delete request submitted
+        '403':
+          description: Not authorized
+        '404':
+          description: Module not found
+        '500':
+          description: Server error
+
+  /modules/{id}/enroll:
+    post:
+      summary: Enroll student in module
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hourlyRate:
+                  type: number
+                expectedEndDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Enrolled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleEnrollment'
+        '400':
+          description: Already enrolled / invalid module
+        '403':
+          description: Not a student
+        '500':
+          description: Server error
+
+  /modules/{moduleId}/activity:
+    post:
+      summary: Record student activity (task/mcq)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [task, mcq]
+                itemId:
+                  type: string
+              required:
+                - type
+                - itemId
+      responses:
+        '200':
+          description: Activity recorded
+        '400':
+          description: Invalid type / student not enrolled
+        '404':
+          description: Module or item not found
+        '500':
+          description: Server error
+
+  /modules/{moduleId}/progress:
+    put:
+      summary: Update student progress (tutor/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                progressPercent:
+                  type: number
+              required:
+                - studentId
+                - progressPercent
+      responses:
+        '200':
+          description: Progress updated
+        '400':
+          description: Invalid input
+        '403':
+          description: Not authorized
+        '404':
+          description: Module or enrollment not found
+        '500':
+          description: Server error
+
+  /modules/{moduleId}/feedback:
+    post:
+      summary: Give feedback to student (tutor/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                feedbackText:
+                  type: string
+              required:
+                - studentId
+                - feedbackText
+      responses:
+        '201':
+          description: Feedback recorded
+        '200':
+          description: Feedback updated
+        '400':
+          description: Validation error
+        '403':
+          description: Not authorized
+        '404':
+          description: Module not found
+        '500':
+          description: Server error
+
+  /profile:
+    get:
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+    put:
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                visionStatement:
+                  type: string
+                bio:
+                  type: string
+                skills:
+                  type: array
+                  items:
+                    type: string
+                availability:
+                  type: string
+                profilePicture:
+                  type: string
+                documents:
+                  type: object
+      responses:
+        '200':
+          description: Profile updated
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+security:
+  - bearerAuth: []
+

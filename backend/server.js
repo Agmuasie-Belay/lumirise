@@ -1,38 +1,37 @@
 import express from "express";
-import { connectDB } from "./config/db.js";
 import dotenv from "dotenv";
-import path from "path";
-import productRoutes from './routes/product.route.js';
-
 import cors from "cors";
-
+import { connectDB } from "./config/db.js"; 
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import moduleRoutes from "./routes/module.routes.js";
+import enrollmentRoutes from "./routes/enrollment.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+dotenv.config();
 const app = express();
 
-// Allow requests from Vite dev server
-app.use(cors({
-  origin: "http://localhost:5173",   // frontend origin
-  methods: ["GET", "POST", "PUT", "DELETE"], 
-  credentials: true
-}));
-dotenv.config();
-
-const PORT = process.env.PORT;
-
-const __dirname = path.resolve();
-
+app.use(cors());
 app.use(express.json());
-app.use('/api/products', productRoutes);
+app.use(express.urlencoded({ extended: true }));
 
-if(process.env.NODE_ENV === "production"){
-  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+const swaggerDocument = YAML.load('./docs/swagger.yaml');
 
-  app.get("*", (req, res)=>{
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
-  })
-}
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.listen(PORT, () => {
-  connectDB();
-  console.log(`Server is running on port ${PORT}`);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/modules", moduleRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/admin", adminRoutes);
+
+app.get("/", (req, res) => res.send("LumiRise API Running"));
+
+const PORT = process.env.PORT || 5000;
+connectDB().then(() => {
+  app.listen(PORT, () => {const swaggerURL = `http://localhost:${PORT}/api-docs`;
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Open Swagger UI: %c${swaggerURL}`, 'color: blue; text-decoration: underline;');
+ });
 });
-
