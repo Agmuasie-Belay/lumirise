@@ -9,6 +9,11 @@ It demonstrates professional software engineering practices, clean
 modular architecture, and full workflow automation for student--tutor
 interaction.
 
+## Live Application
+
+The app is live at:  
+[https://lumirise-sage.vercel.app/](https://lumirise-sage.vercel.app/)
+
 ------------------------------------------------------------------------
 
 # 🖥️ Frontend Overview (React + Zustand + Chakra UI)
@@ -133,6 +138,13 @@ The frontend is fully synced with backend behavior via:
 
 -   This repo clearly demonstrates my capability to deliver **real-world
 full-stack systems**, not toy apps.
+
+## Live Application
+
+The app is live at:  
+[https://lumirise-sage.vercel.app/](https://lumirise-sage.vercel.app/)
+
+
 
 ------------------------------------------------------------------------
 
