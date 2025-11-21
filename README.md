@@ -1,4 +1,4 @@
-# 🌟 LumiRise MERN App 
+# 🪶 LumiRise MERN App 
 
 ### **A Scalable Learning & Mentorship Management System Built with the MERN Stack**
 
@@ -129,9 +129,9 @@ The frontend is fully synced with backend behavior via:
 -   JWT authentication\
 -   Clean error handling
 
-### ✔ Developer Portfolio Quality
+### ✔ Portfolio Quality
 
--   This repo clearly demonstrates the capability to deliver **real-world
+-   This repo clearly demonstrates my capability to deliver **real-world
 full-stack systems**, not toy apps.
 
 ------------------------------------------------------------------------
