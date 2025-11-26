@@ -51,7 +51,7 @@ const feedbackSchema = new Schema({
 // ==========================
 const moduleSchema = new Schema(
   {
-    title: { type: String, required: true, unique: true, trim: true },
+    title: { type: String, required: true, unique: true, trim: true, index: true },
     description: { type: String, trim: true },
     objectives: [{ type: String, trim: true }],
     lessons: [lessonSchema],
@@ -101,7 +101,6 @@ moduleSchema.virtual("totalMCQs").get(function () {
 });
 
 // Index
-moduleSchema.index({ title: 1 });
 moduleSchema.index({ tutor: 1 });
 moduleSchema.index({ category: 1 });
 

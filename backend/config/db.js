@@ -6,10 +6,7 @@ dotenv.config();
 export const connectDB = async () => {
   const MONGO_URI = process.env.MONGO_URI;
   try {
-    await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGO_URI);
     console.log("MongoDB connected: learntrack DB");
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
