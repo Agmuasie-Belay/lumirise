@@ -44,7 +44,7 @@ const transporter = nodemailer.createTransport({
 // Send email with retry attempts
  
 export const sendEmail = async (to, subject, html) => {
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 6;
   let attempt = 0;
 
   while (attempt < MAX_ATTEMPTS) {
@@ -66,9 +66,8 @@ export const sendEmail = async (to, subject, html) => {
   }
 };
 
-/**
- * Send verification link (wrapper)
- */
+// Send verification link (wrapper)
+ 
 export const sendVerificationLink = async (email, name, token) => {
   const subject = "Verify your LumiRise account";
   const html = verificationTemplate(name || "User", token);
