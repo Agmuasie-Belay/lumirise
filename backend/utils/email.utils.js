@@ -1,18 +1,16 @@
-// utils/email.utils.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const {
-  GMAIL_USER, // Your Gmail email address
-  GMAIL_APP_PASS, // Gmail App Password (required if 2FA enabled)
-  BACKEND_URL = "http://localhost:5000",
+  GMAIL_USER,
+  GMAIL_APP_PASS, 
+  BACKEND_URL,
 } = process.env;
 
-/**
- * Verification email HTML (template unchanged)
- */
+//Verification email HTML template
+ 
 export const verificationTemplate = (name, token) => {
   const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?token=${token}`;
   return `
@@ -31,9 +29,8 @@ export const verificationTemplate = (name, token) => {
   `;
 };
 
-/**
- * Nodemailer transporter for Gmail SMTP
- */
+// Nodemailer transporter for Gmail SMTP
+ 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465, // SSL
@@ -44,9 +41,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/**
- * Send email with retry attempts
- */
+// Send email with retry attempts
+ 
 export const sendEmail = async (to, subject, html) => {
   const MAX_ATTEMPTS = 3;
   let attempt = 0;
@@ -59,11 +55,11 @@ export const sendEmail = async (to, subject, html) => {
         subject,
         html,
       });
-      console.log(`✅ Email sent to ${to}`);
+      console.log(`Email sent to ${to}`);
       return true;
     } catch (err) {
       attempt++;
-      console.error(`❌ sendEmail attempt ${attempt} failed for ${to}:`, err.message);
+      console.error(`sendEmail attempt ${attempt} failed for ${to}:`, err.message);
       if (attempt >= MAX_ATTEMPTS) return false;
       await new Promise((resolve) => setTimeout(resolve, 1500));
     }
