@@ -6,7 +6,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useAuthStore } from "../store/auth";
+import { useAuthStore } from "../../store/auth";
 
 function Navbar() {
   const navigate = useNavigate();

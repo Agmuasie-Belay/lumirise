@@ -9,7 +9,7 @@ import {
   Box,
   Button,
 } from "@chakra-ui/react";
-import ModuleCard from "../../components/ModuleCard";
+import ModuleCard from "../../components/Module/ModuleCard";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -19,14 +19,12 @@ const MotionBox = motion(Box);
 const StudentHome = () => {
   const { fetchModules, modules } = useModuleStore();
   const { currentUser } = useAuthStore();
-  console.log("Current User in StudentHome:", currentUser);
   const navigate = useNavigate();
 
   useEffect(() => {
       fetchModules();
   }, [fetchModules]);
-
-  console.log("Modules", modules);
+  
   return (
     
        <Container maxW="container.lg" py={10}>

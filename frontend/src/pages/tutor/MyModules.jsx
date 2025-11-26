@@ -7,7 +7,7 @@ import {
   VStack,
   useColorModeValue,
 } from "@chakra-ui/react";
-import ModuleCard from "../../components/ModuleCard";
+import ModuleCard from "../../components/Module/ModuleCard";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -17,7 +17,6 @@ const MotionBox = motion(Container);
 const MyModules = () => {
   const { fetchModules, modules } = useModuleStore();
   const tutorId = localStorage.getItem("userId");
-console.log("Tutor ID from localStorage:", tutorId);
   useEffect(() => {
     fetchModules();
   }, [fetchModules]);

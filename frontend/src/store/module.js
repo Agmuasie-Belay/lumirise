@@ -183,7 +183,6 @@ const cleanedLessons = Array.isArray(newModule.lessons)
     const userId = JSON.parse(localStorage.getItem("user"))?.id;
 
     let filteredModules = data.data;
-    console.log(filteredModules)
     if (userRole === "student") {
       // Students see only approved/published modules
       filteredModules = filteredModules.filter((m) => m.status === "Published");

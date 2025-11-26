@@ -7,7 +7,7 @@ const Testimonials = () => {
       name: "John Doe",
       role: "Full Stack Developer",
       feedback:
-        "LuminiRise transformed my coding skills. The modules are clear, practical, and fun!",
+        "LumiRise transformed my coding skills. The modules are clear, practical, and fun!",
     },
     {
       name: "Jane Smith",

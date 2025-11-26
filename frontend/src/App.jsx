@@ -3,18 +3,18 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 
-import CreatePage from "./pages/CreatePage";
-import EditModule from "./pages/EditModule";
+import CreatePage from "./components/Module/CreatePage";
+import EditModule from "./components/Module/EditModule";
 import ViewModuleDetails from "./components/Module/ViewModuleDetails";
 
 // Role-specific dashboards
 import StudentHome from "./pages/student/StudentHome";
 import TutorHome from "./pages/tutor/TutorHome";
-import DailyJournal from "./pages/DailyJournal";
+import DailyJournal from "./pages/student/DailyJournal";
 import Layout from "./components/layout/Layout";
 import AdminHome from "./pages/admin/AdminHome";
 

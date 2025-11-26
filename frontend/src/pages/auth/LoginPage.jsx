@@ -43,7 +43,6 @@ const LoginPage = () => {
 
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("role", JSON.stringify(user.role));
-      console.log("role stored in localStorage:", user.role);
       toast({
         title: "Success",
         description: message,

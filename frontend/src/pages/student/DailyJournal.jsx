@@ -29,8 +29,8 @@ import {
   FormLabel,
 } from "@chakra-ui/react";
 import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
-import { useAuthStore } from "../store/auth";
-import { apiFetch } from "../store/api";
+import { useAuthStore } from "../../store/auth";
+import { apiFetch } from "../../store/api";
 
 const DailyJournal = () => {
   const { currentUser } = useAuthStore && useAuthStore();
@@ -51,7 +51,7 @@ const DailyJournal = () => {
       const data = await apiFetch("http://localhost:5000/api/journal");
       setEntries(data.data || []);
     } catch (err) {
-      console.error("Fetch journal error:", err.message);
+      //console.error("Fetch journal error:", err.message);
       toast({ title: "Could not load journal", status: "error", duration: 3000 });
     } finally {
       setLoading(false);

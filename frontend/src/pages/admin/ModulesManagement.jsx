@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useModuleStore } from "../../store/module";
 import { SimpleGrid, Text } from "@chakra-ui/react";
-import ModuleCard from "../../components/ModuleCard";
+import ModuleCard from "../../components/Module/ModuleCard";
 
 const ModulesManagement = () => {
   const { fetchModules, modules } = useModuleStore();

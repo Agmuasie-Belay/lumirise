@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, Box, Flex, Text, Button } from "@chakra-ui/react";
 import { LogOut, User } from "lucide-react";
-import { useAuthStore } from "../store/auth";
+import { useAuthStore } from "../../store/auth";
 
 const MotionBox = motion(Box);
 

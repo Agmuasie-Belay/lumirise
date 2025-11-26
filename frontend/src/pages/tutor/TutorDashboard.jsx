@@ -13,7 +13,7 @@ import {
   StatHelpText,
   useColorModeValue,
 } from "@chakra-ui/react";
-import ModuleCard from "../../components/ModuleCard";
+import ModuleCard from "../../components/Module/ModuleCard";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 

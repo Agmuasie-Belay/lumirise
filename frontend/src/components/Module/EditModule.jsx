@@ -1,7 +1,7 @@
 // src/pages/EditModule.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useModuleStore } from "../store/module";
+import { useModuleStore } from "../../store/module";
 import {
   VStack,
   Input,

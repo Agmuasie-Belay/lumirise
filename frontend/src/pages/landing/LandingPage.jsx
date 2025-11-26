@@ -16,7 +16,7 @@ import { useState, useEffect } from "react";
 import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
 import Testimonials from "./Testimonials";
 import FeaturedModules from "./FeaturedModules";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/layout/Navbar";
 
 // Motion wrapper
 const MotionBox = motion(Box);
@@ -118,7 +118,7 @@ const LandingPage = () => {
               transition={{ duration: 1, delay: 0.2 }}
             >
               <Heading fontSize={{ base: "3xl", md: "5xl" }} fontWeight="extrabold">
-                Ignite Your Potential with LumaRise
+                Ignite Your Potential with LumiRise
               </Heading>
             </MotionBox>
             <MotionBox
@@ -163,7 +163,7 @@ const LandingPage = () => {
             </Text>
             <Link to="/signup">
               <Button colorScheme="yellow" size="lg" _hover={{ bg: "yellow.400" }}>
-                Join LumaRise
+                Join LumiRise
               </Button>
             </Link>
           </VStack>
@@ -176,7 +176,7 @@ const LandingPage = () => {
           <VStack spacing={6}>
             <HStack spacing={8} wrap="wrap" justify="center">
               <Link to="/">
-                <Text fontWeight="bold" fontSize="lg">LumaRise</Text>
+                <Text fontWeight="bold" fontSize="lg">LumiRise</Text>
               </Link>
               <Link to="/signup">
                 <Text _hover={{ textDecoration: "underline" }}>Sign Up</Text>
@@ -192,7 +192,7 @@ const LandingPage = () => {
               </Link>
             </HStack>
             <Text fontSize="sm" color="gray.400" textAlign="center">
-              &copy; {new Date().getFullYear()} LumaRise. All rights reserved.
+              &copy; {new Date().getFullYear()} LumiRise. All rights reserved.
             </Text>
           </VStack>
         </Container>

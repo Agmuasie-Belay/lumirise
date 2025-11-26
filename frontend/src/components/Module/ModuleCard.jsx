@@ -13,12 +13,12 @@ import {
   Divider,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useAuthStore } from "../store/auth";
-import { useModuleStore } from "../store/module";
+import { useAuthStore } from "../../store/auth";
+import { useModuleStore } from "../../store/module";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import ViewModuleDetails from "./Module/ViewModuleDetails";
-import EditModuleModal from "../components/EditModuleModal";
+import ViewModuleDetails from "./ViewModuleDetails";
+import EditModuleModal from "./EditModuleModal";
 const MotionBox = motion(Box);
 
 const ModuleCard = ({ module, loading = false }) => {

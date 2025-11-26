@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useState, useEffect } from "react";
-import { useModuleStore } from "../store/module";
+import { useModuleStore } from "../../store/module";
 import { useNavigate } from "react-router-dom";
 
 const CreateModulePage = () => {
