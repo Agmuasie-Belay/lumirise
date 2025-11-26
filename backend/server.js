@@ -28,10 +28,11 @@ app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => res.send("LumiRise API Running"));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
+const BACKEND_URL = process.env.BACKEND_URL;
 connectDB().then(() => {
-  app.listen(PORT, () => {const swaggerURL = `http://localhost:${PORT}/api-docs`;
-    console.log(`Server running on port ${PORT}`);
+  app.listen(PORT, () => {const swaggerURL = `${BACKEND_URL}/api-docs`;
+    console.log(`Server running on ${BACKEND_URL}`);
     console.log(`Open Swagger UI: %c${swaggerURL}`, 'color: blue; text-decoration: underline;');
  });
 });
