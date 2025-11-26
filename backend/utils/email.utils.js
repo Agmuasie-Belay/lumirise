@@ -1,16 +1,17 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const {
-  GMAIL_USER,
-  GMAIL_APP_PASS, 
-  BACKEND_URL,
+  RESEND_API_KEY,
+  BACKEND_URL, 
 } = process.env;
 
-//Verification email HTML template
- 
+// Initialize Resend client
+const resend = new Resend(RESEND_API_KEY);
+
+// Verification email HTML template (unchanged)
 export const verificationTemplate = (name, token) => {
   const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?token=${token}`;
   return `
@@ -29,47 +30,28 @@ export const verificationTemplate = (name, token) => {
   `;
 };
 
-// Nodemailer transporter for Gmail SMTP
- 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465, // SSL
-  secure: true,
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_APP_PASS,
-  },
-});
-
-// Send email with retry attempts
- 
+// Send email using Resend
 export const sendEmail = async (to, subject, html) => {
-  const MAX_ATTEMPTS = 6;
-  let attempt = 0;
-
-  while (attempt < MAX_ATTEMPTS) {
-    try {
-      await transporter.sendMail({
-        from: `"LumiRise Team" <${GMAIL_USER}>`,
-        to,
-        subject,
-        html,
-      });
-      console.log(`Email sent to ${to}`);
-      return true;
-    } catch (err) {
-      attempt++;
-      console.error(`sendEmail attempt ${attempt} failed for ${to}:`, err.message);
-      if (attempt >= MAX_ATTEMPTS) return false;
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
+  try {
+    await resend.emails.send({
+      from: "LumiRise <onboarding@resend.dev>",
+      to,
+      subject,
+      html,
+    });
+    console.log(`Email sent to ${to}`);
+    return true;
+  } catch (err) {
+    console.error("sendEmail error:", err.message);
+    return false;
   }
 };
 
-// Send verification link (wrapper)
- 
+// Send verification link
 export const sendVerificationLink = async (email, name, token) => {
-  const subject = "Verify your LumiRise account";
-  const html = verificationTemplate(name || "User", token);
-  return await sendEmail(email, subject, html);
+  return await sendEmail(
+    email,
+    "Verify your LumiRise account",
+    verificationTemplate(name || "User", token)
+  );
 };
