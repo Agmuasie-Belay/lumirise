@@ -5,7 +5,11 @@ dotenv.config();
 
 const {
   RESEND_API_KEY,
+<<<<<<< HEAD
   BACKEND_URL, // use BACKEND_URL if you prefer
+=======
+  BACKEND_URL, 
+>>>>>>> 3dcaf8113fbb4d94778dc562e219ad6e5ca7d9e3
 } = process.env;
 
 // Initialize Resend client

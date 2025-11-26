@@ -1,9 +1,7 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-// ==========================
-// 📝 MCQ Schema (Nested under Lesson)
-// ==========================
+//  MCQ Schema (Nested under Lesson)
 const mcqSchema = new Schema({
   question: { type: String, required: true, trim: true },
   options: [{ type: String, required: true, trim: true }],
@@ -11,9 +9,7 @@ const mcqSchema = new Schema({
   order: { type: Number, default: 1 },
 });
 
-// ==========================
-// 🎯 Task Schema (Nested under Lesson)
-// ==========================
+// Task Schema (Nested under Lesson)
 const taskSchema = new Schema({
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
@@ -22,9 +18,7 @@ const taskSchema = new Schema({
   order: { type: Number, default: 1 },
 });
 
-// ==========================
-// 🗒️ Lesson Schema
-// ==========================
+// Lesson Schema
 const lessonSchema = new Schema({
   title: { type: String, required: true, trim: true },
   body: { type: String, trim: true },
@@ -35,9 +29,7 @@ const lessonSchema = new Schema({
   mcqs: [mcqSchema],
 });
 
-// ==========================
-// ⭐ Feedback Schema
-// ==========================
+// Feedback Schema
 const feedbackSchema = new Schema({
   student: { type: Schema.Types.ObjectId, ref: "User", required: true },
   tutor: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -46,16 +38,14 @@ const feedbackSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// ==========================
-// 📚 Module Schema
-// ==========================
+// Module Schema
 const moduleSchema = new Schema(
   {
     title: { type: String, required: true, unique: true, trim: true, index: true },
     description: { type: String, trim: true },
     objectives: [{ type: String, trim: true }],
     lessons: [lessonSchema],
-    hourlyRate: { type: Number }, // optional: overrides tutor's default
+    hourlyRate: { type: Number }, 
     tutor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     enrolledStudents: [{ type: Schema.Types.ObjectId, ref: "User" }],
     feedback: [feedbackSchema],
@@ -87,9 +77,7 @@ const moduleSchema = new Schema(
   { timestamps: true }
 );
 
-// ==========================
 // Virtuals
-// ==========================
 moduleSchema.virtual("totalLessons").get(function () {
   return this.lessons.length;
 });
