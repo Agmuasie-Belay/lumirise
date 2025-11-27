@@ -84,47 +84,75 @@ const SignupPage = () => {
     }
   };
 
-  const handleSignup = async () => {
-    if (!isEmailValid || !isPasswordValid || !isPhoneValid || !isVisionValid) {
-      toast({
-        title: "Validation Error",
-        description: `Please fill all fields correctly (valid email, phone required, password ≥8 chars${
-          formData.role === "student" ? `, vision ${MIN_VISION}-${MAX_VISION} chars` : ""
-        }).`,
-        status: "warning",
-        duration: 4000,
-        isClosable: true,
-      });
-      return;
-    }
+ const handleSignup = async () => {
+  if (!isEmailValid || !isPasswordValid || !isPhoneValid || !isVisionValid) {
+    toast({
+      title: "Validation Error",
+      description: `Please fill all fields correctly (valid email, phone required, password ≥8 chars${
+        formData.role === "student" ? `, vision ${MIN_VISION}-${MAX_VISION} chars` : ""
+      }).`,
+      status: "warning",
+      duration: 4000,
+      isClosable: true,
+    });
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      const { success, message } = await signup(formData);
-      if (success) {
-        toast({
-          title: "Account created!",
-          description: message,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-        navigate("/login");
-      } else {
-        throw new Error(message);
-      }
-    } catch (err) {
+  setIsLoading(true);
+
+  try {
+    const { success, message, fallbackVerificationLink } = await signup(formData);
+
+    if (success) {
       toast({
-        title: "Error",
-        description: err.message,
-        status: "error",
+        title: "Account created!",
+        description: message,
+        status: "success",
         duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
+
+      if (fallbackVerificationLink) {
+        toast({
+          title: "Email delivery failed",
+          description: (
+            <span>
+              We couldn't send the verification email after multiple attempts. You can manually verify your account here:{" "}
+              <a
+                href={fallbackVerificationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#3182CE", textDecoration: "underline" }}
+              >
+                Verify Email
+              </a>
+            </span>
+          ),
+          status: "warning",
+          duration: 8000,
+          isClosable: true,
+        });
+      }
+
+      // Optional: Wait a bit for fallback toast to be read
+      setTimeout(() => navigate("/login"), 500);
+    } else {
+      throw new Error(message);
     }
-  };
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: err.message,
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   return (
     <Container maxW="container.sm">

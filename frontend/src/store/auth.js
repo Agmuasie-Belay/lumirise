@@ -12,28 +12,35 @@ export const useAuthStore = create(
 
       // SIGN UP
       signup: async (newUser) => {
-        try {
-          if (!newUser.name || !newUser.email || !newUser.password) {
-            return { success: false, message: "Please provide all values" };
-          }
+  try {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      return { success: false, message: "Please provide all values" };
+    }
 
-          const res = await fetch(`${API_URL}/api/auth/signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newUser),
-          });
+    const res = await fetch(`${API_URL}/api/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUser),
+    });
 
-          const data = await res.json();
-          if (!data.success) return { success: false, message: data.message };
+    const data = await res.json();
+    if (!data.success) return { success: false, message: data.message };
 
-          set((state) => ({ users: [...state.users, data.data] }));
+    set((state) => ({ users: [...state.users, data.data] }));
 
-          return { success: true, message: data.message };
-        } catch (error) {
-          console.error("Signup error:", error.message);
-          return { success: false, message: "Signup failed" };
-        }
-      },
+    // Return fallbackVerificationLink if email sending failed
+    return {
+      success: true,
+      message: data.message,
+      fallbackVerificationLink: data.fallbackVerificationLink || null,
+      user: data.data,
+    };
+  } catch (error) {
+    console.error("Signup error:", error.message);
+    return { success: false, message: "Signup failed", fallbackVerificationLink: null };
+  }
+},
+
 
       // LOGIN
       login: async (credentials) => {

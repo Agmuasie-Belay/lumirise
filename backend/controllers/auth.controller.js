@@ -47,106 +47,106 @@ async function pushAudit(user, action, req, extra = {}) {
  * SIGNUP: Creates a new user and initiates email or phone verification.
  */
 export const signup = async (req, res) => {
-    try {
-        const { name, email, phone, password, role, visionStatement } = req.body;
+  try {
+    const { name, email, phone, password, role, visionStatement } = req.body;
 
-        // --- Validation Checks ---
-        if (!name || !password || !role || (!email && !phone)) {
-            return res.status(400).json({ success: false, message: "Required fields missing" });
-        }
-
-        if (!["student", "tutor"].includes(role)) {
-            return res.status(400).json({ success: false, message: "Invalid role" });
-        }
-
-        if (email && !emailRegex.test(email)) {
-            return res.status(400).json({ success: false, message: "Invalid email" });
-        }
-
-        if (phone && !phoneRegex.test(phone)) {
-            return res.status(400).json({ success: false, message: "Invalid phone number" });
-        }
-
-        if (!isValidPassword(password)) {
-            return res.status(400).json({
-                success: false,
-                message: "Password must be at least 8 characters and include letters and numbers",
-            });
-        }
-
-        if (role === "student" && (!visionStatement || visionStatement.length < 50)) {
-            return res.status(400).json({
-                success: false,
-                message: "Vision statement must be at least 50 characters",
-            });
-        }
-
-        // --- Duplicate Checks ---
-        if (email && await User.findOne({ email })) {
-            return res.status(400).json({ success: false, message: "Email already in use" });
-        }
-        if (phone && await User.findOne({ phone })) {
-            return res.status(400).json({ success: false, message: "Phone already in use" });
-        }
-
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        const userPayload = {
-            name,
-            email,
-            phone,
-            passwordHash,
-            role,
-            visionStatement: role === "student" ? visionStatement : undefined,
-            emailVerification: { verified: false },
-            phoneVerification: { verified: false },
-            canUploadDocuments: false,
-            resendCount: 0,
-            lastResendAt: null,
-            verificationAudit: [],
-        };
-
-        if (!email && phone) {
-            // Set phone verification code and expiry if no email is provided
-            userPayload.phoneVerification.code = generateVerificationCode();
-            userPayload.phoneVerification.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-        }
-
-        const newUser = await User.create(userPayload);
-        await pushAudit(newUser, "signup", req, { note: "user created (unverified)" });
-
-        if (email) {
-            // Send email verification link
-            const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: "10m" });
-            const sent = await sendVerificationLink(email, name, token);
-
-            if (sent) {
-                await pushAudit(newUser, "verification-email-sent", req);
-            } else {
-                await pushAudit(newUser, "verification-email-failed", req);
-                // Allow account creation even if email fails, but inform the user
-                return res.status(201).json({
-                    success: true,
-                    message: "Account created but failed to send verification email. Please request a resend.",
-                    data: { id: newUser._id, email, phone, role: newUser.role },
-                });
-            }
-        } else {
-            // Log code for development/testing when phone is used without email
-            console.log("Phone verification code (dev):", newUser.phoneVerification.code);
-            await pushAudit(newUser, "phone-verification-code-created", req);
-        }
-
-        return res.status(201).json({
-            success: true,
-            message: email ? "Signup successful. Please verify your email." : "Signup successful. Please verify your phone number using the code.",
-            data: { id: newUser._id, email, phone, role: newUser.role },
-        });
-    } catch (error) {
-        console.error("Signup error:", error);
-        return res.status(500).json({ success: false, message: "Server error" });
+    // --- Validation Checks ---
+    if (!name || !password || !role || (!email && !phone)) {
+      return res.status(400).json({ success: false, message: "Required fields missing" });
     }
+
+    if (!["student", "tutor"].includes(role)) {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+
+    if (email && !emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email" });
+    }
+
+    if (phone && !phoneRegex.test(phone)) {
+      return res.status(400).json({ success: false, message: "Invalid phone number" });
+    }
+
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters and include letters and numbers",
+      });
+    }
+
+    if (role === "student" && (!visionStatement || visionStatement.length < 50)) {
+      return res.status(400).json({
+        success: false,
+        message: "Vision statement must be at least 50 characters",
+      });
+    }
+
+    // --- Duplicate Checks ---
+    if (email && await User.findOne({ email })) {
+      return res.status(400).json({ success: false, message: "Email already in use" });
+    }
+    if (phone && await User.findOne({ phone })) {
+      return res.status(400).json({ success: false, message: "Phone already in use" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const userPayload = {
+      name,
+      email,
+      phone,
+      passwordHash,
+      role,
+      visionStatement: role === "student" ? visionStatement : undefined,
+      emailVerification: { verified: false },
+      phoneVerification: { verified: false },
+      canUploadDocuments: false,
+      resendCount: 0,
+      lastResendAt: null,
+      verificationAudit: [],
+    };
+
+    if (!email && phone) {
+      // Phone verification only
+      userPayload.phoneVerification.code = generateVerificationCode();
+      userPayload.phoneVerification.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    }
+
+    const newUser = await User.create(userPayload);
+    await pushAudit(newUser, "signup", req, { note: "user created (unverified)" });
+
+    let fallbackLink = null;
+
+    if (email) {
+      const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: "10m" });
+      const { sent, fallbackVerificationLink } = await sendVerificationLink(email, name, newUser._id);
+
+      fallbackLink = fallbackVerificationLink;
+
+      if (sent) {
+        await pushAudit(newUser, "verification-email-sent", req);
+      } else {
+        await pushAudit(newUser, "verification-email-failed", req);
+      }
+    } else {
+      console.log("Phone verification code (dev):", newUser.phoneVerification.code);
+      await pushAudit(newUser, "phone-verification-code-created", req);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: email
+        ? "Signup successful. Please verify your email."
+        : "Signup successful. Please verify your phone number using the code.",
+      data: { id: newUser._id, email, phone, role: newUser.role },
+      fallbackVerificationLink: fallbackLink, // <-- new field
+    });
+  } catch (error) {
+    console.error("Signup error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
 };
+
 
 /**
  * VERIFY EMAIL LINK (GET): Handles the verification link click from email.

@@ -1,17 +1,15 @@
-import { Resend } from "resend";
+// email.utils.js
+import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
-const {
-  RESEND_API_KEY,
-  BACKEND_URL, // use BACKEND_URL if you prefer
-} = process.env;
+const { GMAIL_USER, GMAIL_APP_PASS, BACKEND_URL, JWT_SECRET } = process.env;
 
-// Initialize Resend client
-const resend = new Resend(RESEND_API_KEY);
-
-// Verification email HTML template (unchanged)
+// -------------------------
+// Email Verification Template
+// -------------------------
 export const verificationTemplate = (name, token) => {
   const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?token=${token}`;
   return `
@@ -30,11 +28,24 @@ export const verificationTemplate = (name, token) => {
   `;
 };
 
-// Send email using Resend
-export const sendEmail = async (to, subject, html) => {
+// -------------------------
+// Nodemailer Transporter
+// -------------------------
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: GMAIL_USER,
+    pass: GMAIL_APP_PASS,
+  },
+});
+
+// -------------------------
+// Low-level send function
+// -------------------------
+const sendEmailOnce = async (to, subject, html) => {
   try {
-    await resend.emails.send({
-      from: "LumiRise <onboarding@resend.dev>",
+    await transporter.sendMail({
+      from: `"LumiRise" <${GMAIL_USER}>`,
       to,
       subject,
       html,
@@ -47,11 +58,35 @@ export const sendEmail = async (to, subject, html) => {
   }
 };
 
-// Send verification link
-export const sendVerificationLink = async (email, name, token) => {
-  return await sendEmail(
-    email,
-    "Verify your LumiRise account",
-    verificationTemplate(name || "User", token)
-  );
+// -------------------------
+// High-level send with retry + fallback
+// -------------------------
+export const sendVerificationLink = async (email, name, userId) => {
+  const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "10m" });
+  const subject = "Verify your LumiRise account";
+  const html = verificationTemplate(name || "User", token);
+
+  let sent = false;
+  let attempts = 0;
+  const MAX_ATTEMPTS = 3;
+
+  while (!sent && attempts < MAX_ATTEMPTS) {
+    attempts++;
+    console.log(`Attempt ${attempts} to send verification email to ${email}`);
+    sent = await sendEmailOnce(email, subject, html);
+  }
+
+  if (sent) return { sent: true, fallbackVerificationLink: null };
+
+  // All attempts failed → provide fallback link
+  const fallbackVerificationLink = `${BACKEND_URL}/api/auth/verify-email?token=${token}`;
+  console.warn(`Email failed after ${MAX_ATTEMPTS} attempts. Fallback link: ${fallbackVerificationLink}`);
+  return { sent: false, fallbackVerificationLink };
+};
+
+// -------------------------
+// Generic email function
+// -------------------------
+export const sendEmail = async (to, subject, html) => {
+  return await sendEmailOnce(to, subject, html);
 };
