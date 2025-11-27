@@ -7,16 +7,6 @@ export default defineConfig({
   // Base path for assets (default is root)
   base: '/',
 
-  // Dev server proxy for local development
-  server: {
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-
+  
   
 });
