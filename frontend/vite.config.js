@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   
   // Base path for assets (default is root)
-  base: '/',
+  base: './',
 
   
   
