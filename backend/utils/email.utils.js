@@ -67,7 +67,7 @@ export const sendVerificationLink = async (email, name, userId) => {
 
   let sent = false;
   let attempts = 0;
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 1;
 
   while (!sent && attempts < MAX_ATTEMPTS) {
     attempts++;
