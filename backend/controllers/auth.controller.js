@@ -183,7 +183,7 @@ export const verifyEmailLink = async (req, res) => {
             await pushAudit(user, "email-verification-already", req);
         }
 
-        return res.redirect(`${FRONTEND_URL}/login?verified=success`);
+        return res.redirect(`${FRONTEND_URL}/login`);
     } catch (error) {
         console.error("verifyEmailLink error:", error);
         return res.redirect(`${FRONTEND_URL}/verify-failed`);
