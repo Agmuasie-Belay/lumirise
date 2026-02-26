@@ -1,8 +1,8 @@
 import { forwardRef } from "react";
-import { Box, Flex, Button, IconButton, useColorModeValue } from "@chakra-ui/react";
+import { Box, Flex, Button, IconButton, useColorModeValue} from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Grid, Calendar, BookOpen, Users, LayoutDashboard, Activity,
+  Grid, Calendar, BookOpen, Users, LayoutDashboard, Activity, Award,
   ChevronLeft, ChevronRight, FileText, Users2, Feather, X,
 } from "lucide-react";
 import NavItem from "./NavItem";
@@ -25,11 +25,12 @@ const Sidebar = forwardRef(
         { to: "/student/dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
         { to: "/student/modules", icon: <Grid size={20} />, label: "My Modules" },
         { to: "/student/journal", icon: <BookOpen size={20} />, label: "Daily Journal" },
+        { to: "/student/ccertifications", icon: <Award size={20} />, label: "Certifications"}
       ],
       tutor: [
         { to: "/tutor/dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
         { to: "/tutor/modules", icon: <Grid size={20} />, label: "My Modules" },
-        { to: "/tutor/students", icon: <Users size={20} />, label: "Students" },
+        { to: "/tutor/all-students", icon: <Users size={20} />, label: "Students submissions" },
         { to: "/tutor/journals", icon: <Calendar size={20} />, label: "Student Journals" },
       ],
       admin: [

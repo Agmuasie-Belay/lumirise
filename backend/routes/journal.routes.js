@@ -1,18 +1,18 @@
 import express from "express";
-import {
-  getJournal,
-  addJournalEntry,
-  updateJournalEntry,
-  deleteJournalEntry,
-} from "../controllers/journal.controller.js";
-import { authMiddleware } from "../middleware/authMiddleware.js"; // adjust path/name to your existing middleware
+import { protect } from "../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
+import {
+  createDailyJournal,
+  updateDailyJournal,
+  deleteDailyJournal,
+  tutorJournalView
+} from "../controllers/journal.controller.js"; 
 const router = express.Router();
 
-// all endpoints require auth
-router.get("/", authMiddleware, getJournal);
-router.post("/", authMiddleware, addJournalEntry);
-router.put("/:entryId", authMiddleware, updateJournalEntry);
-router.delete("/:entryId", authMiddleware, deleteJournalEntry);
+router.post("/:enrollmentId/journal", protect, authorizeRoles("student"),createDailyJournal);
+router.put("/:enrollmentId/journal/:journalId", protect, authorizeRoles("student"), updateDailyJournal);
+router.delete("/:enrollmentId/journal/:journalId", protect, authorizeRoles("student"), deleteDailyJournal);
+router.get("/:enrollmentId/journals", protect,authorizeRoles("student","tutor"),tutorJournalView);
 
 export default router;

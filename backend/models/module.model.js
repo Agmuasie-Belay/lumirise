@@ -1,95 +1,112 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-//  MCQ Schema (Nested under Lesson)
-const mcqSchema = new Schema({
-  question: { type: String, required: true, trim: true },
-  options: [{ type: String, required: true, trim: true }],
-  correctAnswer: { type: String, required: true, trim: true },
-  order: { type: Number, default: 1 },
-});
+// Content Block Schema
+const contentBlockSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["video", "ppt", "markdown", "mcq", "task"],
+      required: true,
+    },
+    title: { type: String, trim: true },
+    order: { type: Number, required: true },
+    content: { type: Schema.Types.Mixed, required: function () {return this.type !== "mcq"; } }, // For video URL, ppt link, markdown text, etc.
+    // MCQ-specific fields
+    questions: [
+      {
+        questionText: { type: String, required: true },
+        options: [
+          {
+            text: { type: String, required: true },
+            isCorrect: { type: Boolean, default: false }, // only used for grading
+          },
+        ],
+        type: { type: String, enum: ["mcq", "checkbox"], default: "mcq" },
+        maxScore: { type: Number, default: 0 },
+      },
+    ],
 
-// Task Schema (Nested under Lesson)
-const taskSchema = new Schema({
-  title: { type: String, required: true, trim: true },
-  description: { type: String, required: true, trim: true },
-  required: { type: Boolean, default: true },
-  estimatedTime: { type: Number, min: 1 },
-  order: { type: Number, default: 1 },
+    // Optional: total max score for the block (used for grading)
+    maxScore: { type: Number, default: 0 },
+  },
+  { _id: true },
+);
+
+contentBlockSchema.pre("validate", function (next) {
+  if (this.type === "mcq" && this.questions?.length) {
+    this.maxScore = this.questions.reduce(
+      (total, q) => total + (q.maxScore || 0),
+      0
+    );
+  }
+  next();
 });
 
 // Lesson Schema
-const lessonSchema = new Schema({
-  title: { type: String, required: true, trim: true },
-  body: { type: String, trim: true },
-  videoLinks: [{ type: String, trim: true }],
-  readingFiles: [{ type: String, trim: true }],
-  order: { type: Number, required: true },
-  tasks: [taskSchema],
-  mcqs: [mcqSchema],
-});
+const lessonSchema = new Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    order: { type: Number, required: true },
+    blocks: [contentBlockSchema],
+  },
+  { _id: true },
+);
 
 // Feedback Schema
-const feedbackSchema = new Schema({
-  student: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  tutor: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  comment: { type: String, trim: true },
-  rating: { type: Number, min: 0, max: 5 },
-  createdAt: { type: Date, default: Date.now },
-});
+const feedbackSchema = new Schema(
+  {
+    student: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    comment: { type: String, required: true },
+    rating: { type: Number, min: 1, max: 5 },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+);
 
 // Module Schema
 const moduleSchema = new Schema(
   {
-    title: { type: String, required: true, unique: true, trim: true, index: true },
-    description: { type: String, trim: true },
-    objectives: [{ type: String, trim: true }],
-    lessons: [lessonSchema],
-    hourlyRate: { type: Number }, 
+    title: { type: String, required: true, trim: true, unique: true },
+    description: { type: String, required: true },
     tutor: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    enrolledStudents: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    feedback: [feedbackSchema],
-    status: { type: String, enum: ["Draft", "Published", "Pending", "Rejected"], default: "Draft" },
-    difficulty: { type: String, enum: ["beginner", "intermediate", "advanced"], default: "beginner" },
-    category: { type: String, trim: true },
-    tags: [{ type: String, trim: true, lowercase: true }],
-    startDate: Date,
-    endDate: Date,
+
+    objectives: [{ type: String }],
+    tags: [{ type: String }],
+    difficulty: { type: String, enum: ["beginner", "intermediate", "advanced"], },
+    category: { type: String },
+
+    lessons: [lessonSchema],
+
+    status: { type: String, 
+      enum: ["Draft", "Pending", "Published", "Archived"],
+      default: "Draft",
+    },
+
+    feedback: {
+      type: [feedbackSchema],
+      default: [],
+    },
+    bannerUrl: { type: String, default: "" },
+    // Approval workflow
     pendingEdit: {
       isRequested: { type: Boolean, default: false },
-      updatedFields: { type: Object, default: {} },
+      updatedFields: { type: Schema.Types.Mixed, default: {} },
       requestedAt: Date,
     },
-    pendingDelete: {
-      isRequested: { type: Boolean, default: false },
-      requestedAt: Date,
-    },
+
+    pendingAction: { type: String, enum: ["delete"], default: null },
     history: [
       {
-        action: { type: String, enum: ["edit", "delete"], required: true },
-        performedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        action: String,
+        performedBy: { type: Schema.Types.ObjectId, ref: "User" },
         approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
-        timestamp: { type: Date, default: Date.now },
-        changes: { type: Object },
+        changes: Schema.Types.Mixed,
+        date: { type: Date, default: Date.now },
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
-
-// Virtuals
-moduleSchema.virtual("totalLessons").get(function () {
-  return this.lessons.length;
-});
-moduleSchema.virtual("totalTasks").get(function () {
-  return this.lessons.reduce((sum, l) => sum + l.tasks.length, 0);
-});
-moduleSchema.virtual("totalMCQs").get(function () {
-  return this.lessons.reduce((sum, l) => sum + l.mcqs.length, 0);
-});
-
-// Index
-moduleSchema.index({ tutor: 1 });
-moduleSchema.index({ category: 1 });
 
 export default mongoose.model("Module", moduleSchema);

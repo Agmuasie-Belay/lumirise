@@ -1,14 +1,15 @@
-import { 
-  Input,
-  Container,
-  Heading,
+import {
   Box,
   Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
   VStack,
+  Text,
   useColorModeValue,
   useToast,
-  HStack,
-  Text,
   Spinner,
   InputGroup,
   InputRightElement,
@@ -18,31 +19,36 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { useAuthStore } from "../../store/auth"; 
+import { motion } from "framer-motion";
+import { useAuthStore } from "../../store/auth";
+
+const MotionBox = motion(Box);
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
     emailOrPhone: "",
     password: "",
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   const navigate = useNavigate();
   const toast = useToast();
-  const { login, sendPasswordResetEmail } = useAuthStore(); // 👈 ensure this exists in your auth store
+  const { login, sendPasswordResetEmail } = useAuthStore();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
       const { success, message, user } = await login(credentials);
-
       if (!success) throw new Error(message || "Login failed");
 
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("role", JSON.stringify(user.role));
+
       toast({
         title: "Success",
         description: message,
@@ -51,7 +57,6 @@ const LoginPage = () => {
         isClosable: true,
       });
 
-      // Redirect based on role
       if (user.role === "student") navigate("/student");
       else if (user.role === "tutor") navigate("/tutor");
       else if (user.role === "admin") navigate("/admin");
@@ -70,12 +75,12 @@ const LoginPage = () => {
     }
   };
 
-  // 👇 Password reset handler
   const handlePasswordReset = async () => {
     if (!credentials.emailOrPhone || !credentials.emailOrPhone.includes("@")) {
       toast({
         title: "Email required",
-        description: "Please enter your email to receive a password reset link.",
+        description:
+          "Please enter your email to receive a password reset link.",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -85,8 +90,10 @@ const LoginPage = () => {
 
     setIsResetting(true);
     try {
-      const { success, message } = await sendPasswordResetEmail(credentials.emailOrPhone);
-      if (!success) throw new Error(message || "Unable to send reset email.");
+      const { success, message } = await sendPasswordResetEmail(
+        credentials.emailOrPhone
+      );
+      if (!success) throw new Error(message);
 
       toast({
         title: "Reset Link Sent",
@@ -108,61 +115,123 @@ const LoginPage = () => {
     }
   };
 
-  return (
-    <Container maxW="container.sm">
-      <VStack spacing={8}>
-        <Heading as="h1" size="xl" textAlign="center" mb={8}>
-          Login to Your Account
-        </Heading>
+  const bgRight = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
 
-        <Box
-          w="80%"
-          bg={useColorModeValue("white", "gray.800")}
-          p={6}
-          rounded="lg"
-          shadow="md"
-        >
+  return (
+  <Flex h="100vh" overflow="hidden">
+    {/* LEFT PANEL */}
+    <Flex
+      flex="1"
+      bgGradient="linear(to-r, blue.500, cyan.400)"
+      color="white"
+      display={{ base: "none", md: "flex" }}
+      align="center"
+      justify="center"
+      px={10}
+      py={8}
+      direction="column"
+      textAlign="center"
+    >
+      <Heading size="xl" mb={4}>
+        Welcome Back.
+      </Heading>
+
+      <Text fontSize="md" opacity={0.9} maxW="sm">
+        Continue your journey with Lumirise and keep building your
+        knowledge, skills, and impact.
+      </Text>
+    </Flex>
+
+    {/* RIGHT PANEL */}
+    <Flex
+      flex="1"
+      align="center"
+      justify="center"
+      bg={bgRight}
+      px={6}
+      py={6}
+    >
+      <MotionBox
+        w="full"
+        maxW="sm"
+        bgGradient="linear(to-r, gray.100, white)"
+        color="cyan.900"
+        p={{ base: 5, md: 6 }}
+        rounded="2xl"
+        shadow="xl"
+        borderWidth="1px"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <VStack spacing={4} align="stretch">
+          <Box textAlign="center">
+            <Heading size="lg" fontWeight="bold">
+              Sign in to your account
+            </Heading>
+            <Text color="gray.500" fontSize="sm" mt={1}>
+              Access your dashboard and continue learning.
+            </Text>
+          </Box>
+
           <form onSubmit={handleLogin}>
             <VStack spacing={4}>
               {/* Email or Phone */}
-              <Input
-                placeholder="Email or Phone"
-                name="emailOrPhone"
-                value={credentials.emailOrPhone}
-                onChange={(e) =>
-                  setCredentials({ ...credentials, emailOrPhone: e.target.value })
-                }
-                isRequired
-              />
-
-              {/* Password with show/hide toggle */}
-              <InputGroup>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Email or Phone</FormLabel>
                 <Input
-                  placeholder="Password"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={credentials.password}
+                  name="emailOrPhone"
+                  value={credentials.emailOrPhone}
                   onChange={(e) =>
-                    setCredentials({ ...credentials, password: e.target.value })
+                    setCredentials({
+                      ...credentials,
+                      emailOrPhone: e.target.value,
+                    })
                   }
-                  isRequired
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
+                  size="md"
                 />
-                <InputRightElement>
-                  <IconButton
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPassword(!showPassword)}
-                  />
-                </InputRightElement>
-              </InputGroup>
+              </FormControl>
 
-              {/* Forgot password link */}
+              {/* Password */}
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Password</FormLabel>
+                <InputGroup>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={credentials.password}
+                    onChange={(e) =>
+                      setCredentials({
+                        ...credentials,
+                        password: e.target.value,
+                      })
+                    }
+                    focusBorderColor="blue.400"
+                    borderRadius="lg"
+                    size="md"
+                  />
+                  <InputRightElement h="full">
+                    <IconButton
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPassword(!showPassword)}
+                    />
+                  </InputRightElement>
+                </InputGroup>
+              </FormControl>
+
+              {/* Forgot Password */}
               <ChakraLink
                 onClick={handlePasswordReset}
+                fontSize="xs"
                 color="blue.500"
-                fontSize="sm"
                 alignSelf="flex-end"
                 _hover={{ textDecoration: "underline", color: "blue.600" }}
                 cursor="pointer"
@@ -170,57 +239,60 @@ const LoginPage = () => {
                 {isResetting ? "Sending reset link..." : "Forgot password?"}
               </ChakraLink>
 
-              {/* Buttons */}
-              <HStack
+              {/* Login Button */}
+              <Button
+                type="submit"
+                colorScheme="blue"
+                size="md"
                 w="full"
-                spacing={4}
-                flexDir={{ base: "column", md: "row" }}
-                mt={2}
+                fontWeight="semibold"
+                rounded="xl"
+                shadow="md"
+                _hover={{
+                  transform: "translateY(-1px)",
+                  shadow: "lg",
+                }}
+                isLoading={isLoading}
+                loadingText="Signing in..."
+                spinner={<Spinner size="sm" />}
               >
-                <Button
-                  colorScheme="blue"
-                  w="full"
-                  type="submit"
-                  isLoading={isLoading}
-                  loadingText="Logging in..."
-                  spinner={<Spinner size="sm" />}
-                  borderRadius="xl"
-                >
-                  Login
-                </Button>
-
-                <Link to="/">
-                  <Button
-                    variant="outline"
-                    colorScheme="gray"
-                    w="full"
-                    borderRadius="xl"
-                  >
-                    Back to Home
-                  </Button>
-                </Link>
-              </HStack>
-
-              {/* Signup Link */}
-              <Text mt={2} fontSize="md" color="gray.400">
-                Don't have an account?{" "}
-                <Link to="/signup">
-                  <Text
-                    as="span"
-                    color="blue.500"
-                    fontWeight="medium"
-                    _hover={{ textDecoration: "underline" }}
-                  >
-                    Signup here.
-                  </Text>
-                </Link>
-              </Text>
+                Sign In
+              </Button>
             </VStack>
           </form>
-        </Box>
-      </VStack>
-    </Container>
-  );
+
+          {/* Bottom Links */}
+          <Text textAlign="center" fontSize="xs">
+            Don't have an account?{" "}
+            <Link to="/signup">
+              <Text
+                as="span"
+                color="blue.500"
+                fontWeight="medium"
+                _hover={{ textDecoration: "underline" }}
+              >
+                Create one
+              </Text>
+            </Link>
+          </Text>
+
+          <Text textAlign="center" fontSize="xs">
+            <Link to="/">
+              <Text
+                as="span"
+                color="gray.500"
+                _hover={{ textDecoration: "underline" }}
+              >
+                ← Back to Home
+              </Text>
+            </Link>
+          </Text>
+        </VStack>
+      </MotionBox>
+    </Flex>
+  </Flex>
+);
+
 };
 
 export default LoginPage;

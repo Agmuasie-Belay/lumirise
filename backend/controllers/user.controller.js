@@ -1,19 +1,18 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-// Assuming sendVerificationLink also handles SMS codes and Password Reset Links
 import { sendVerificationLink } from "../utils/email.utils.js"; 
 
-// Regex (Keeping them inline for easy reference)
+// Regex 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\+?\d{10,15}$/;
 
 // Utility to generate JWT for password reset
 const generateResetToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "10m" }); // Short-lived token
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "10m" }); 
 };
 
-// -------------------- SIGNUP --------------------
+// SIGNUP 
 export const signup = async (req, res) => {
   const { name, email, phone, password, role, visionStatement, documents } = req.body;
 
@@ -62,7 +61,7 @@ export const signup = async (req, res) => {
     await newUser.save();
 
     // Send verification
-    if (email) await sendVerificationLink(email, verificationCode, "email", newUser._id); // Passing userId for link creation
+    if (email) await sendVerificationLink(email, verificationCode, "email", newUser._id); 
     else if (phone) await sendVerificationLink(phone, verificationCode, "sms", newUser._id);
 
     res.status(201).json({
@@ -76,9 +75,8 @@ export const signup = async (req, res) => {
   }
 };
 
-// -------------------- VERIFY EMAIL (Link/GET Request) --------------------
+// VERIFY EMAIL (Link/GET Request) 
 export const verifyEmailLink = async (req, res) => {
-  // Parameters are expected in the query string: /verify-email?id=...&code=...
   const { id: userId, code } = req.query; 
 
   try {
@@ -104,8 +102,6 @@ export const verifyEmailLink = async (req, res) => {
     user.emailVerification.expiresAt = null;
 
     await user.save();
-
-    // In a real application, this should redirect the user to a success page
     res.status(200).json({ success: true, message: "Email verified successfully." }); 
   } catch (error) {
     console.error("Email verification error:", error.message);
@@ -113,9 +109,8 @@ export const verifyEmailLink = async (req, res) => {
   }
 };
 
-// -------------------- VERIFY PHONE (Code/POST Request) --------------------
+// VERIFY PHONE 
 export const verifyPhoneCode = async (req, res) => {
-  // Parameters are expected in the request body: { userId, code }
   const { userId, code } = req.body; 
 
   try {
@@ -149,7 +144,7 @@ export const verifyPhoneCode = async (req, res) => {
   }
 };
 
-// -------------------- RESEND VERIFICATION --------------------
+// RESEND VERIFICATION 
 export const resendVerificationEmail = async (req, res) => {
   const { emailOrPhone } = req.body;
 
@@ -200,43 +195,7 @@ export const resendVerificationEmail = async (req, res) => {
   }
 };
 
-// -------------------- SEND PASSWORD RESET EMAIL --------------------
-export const sendPasswordResetEmail = async (req, res) => {
-  const { emailOrPhone } = req.body;
-
-  try {
-    const user = await User.findOne({ $or: [{ email: emailOrPhone }, { phone: emailOrPhone }] });
-    if (!user) {
-      // Return a generic success message even if the user isn't found
-      // to prevent email enumeration attacks.
-      return res.status(200).json({ 
-        success: true, 
-        message: "If a user is registered with this information, a password reset link has been sent." 
-      });
-    }
-
-    // Generate a secure, short-lived token
-    const resetToken = generateResetToken(user._id);
-
-    // Save token and expiry in the user document
-    user.resetToken = { token: resetToken, expiresAt: new Date(Date.now() + 600000) }; // 10 minutes
-    await user.save();
-
-    // Assuming sendVerificationLink can handle "reset" links
-    await sendVerificationLink(user.email, resetToken, "reset", user._id); 
-
-    res.status(200).json({
-      success: true,
-      message: "If a user is registered with this information, a password reset link has been sent.",
-    });
-  } catch (error) {
-    console.error("Password reset error:", error.message);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-
-// -------------------- LOGIN --------------------
+// LOGIN 
 export const login = async (req, res) => {
   const { emailOrPhone, password } = req.body;
   if (!emailOrPhone || !password)
@@ -248,7 +207,6 @@ export const login = async (req, res) => {
     });
     if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
 
-    // Ensure the verification checks are robust for users who only registered with one contact method
     const isEmailVerified = user.email ? user.emailVerification?.verified : true;
     const isPhoneVerified = user.phone ? user.phoneVerification?.verified : true;
 
@@ -278,7 +236,37 @@ export const login = async (req, res) => {
   }
 };
 
-// -------------------- GET USER PROFILE --------------------
+// SEND PASSWORD RESET EMAIL 
+export const sendPasswordResetEmail = async (req, res) => {
+  const { emailOrPhone } = req.body;
+
+  try {
+    const user = await User.findOne({ $or: [{ email: emailOrPhone }, { phone: emailOrPhone }] });
+    if (!user) {
+      return res.status(200).json({ 
+        success: true, 
+        message: "If a user is registered with this information, a password reset link has been sent." 
+      });
+    }
+
+    const resetToken = generateResetToken(user._id);
+
+    user.resetToken = { token: resetToken, expiresAt: new Date(Date.now() + 600000) }; // 10 minutes
+    await user.save();
+
+    await sendVerificationLink(user.email, resetToken, "reset", user._id); 
+
+    res.status(200).json({
+      success: true,
+      message: "If a user is registered with this information, a password reset link has been sent.",
+    });
+  } catch (error) {
+    console.error("Password reset error:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// GET USER PROFILE 
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-passwordHash -resetToken"); // Exclude sensitive fields
@@ -292,7 +280,7 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// -------------------- UPDATE PROFILE --------------------
+// UPDATE PROFILE 
 export const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -308,7 +296,6 @@ export const updateProfile = async (req, res) => {
     if (availability) user.availability = availability;
     if (profilePicture) user.profilePicture = profilePicture;
 
-    // Merge documents into role-specific sub-schema
     if (documents) {
       if (user.role === "student") user.studentDocuments = { ...user.studentDocuments, ...documents };
       if (user.role === "tutor") user.tutorDocuments = { ...user.tutorDocuments, ...documents };

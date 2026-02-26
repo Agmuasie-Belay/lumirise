@@ -1,480 +1,376 @@
 import Module from "../models/module.model.js";
-import ModuleEnrollment from "../models/enrollment.model.js";
-import MentorshipSession from "../models/mentorshipsession.model.js"; // CRITICAL: Added for cascade deletion
 import mongoose from "mongoose";
 
-// ==========================
-// 🧠 Helper: compute progress percent
-// ==========================
-const computeProgressPercent = (module, enrollment) => {
-    const completedTasksCount = enrollment.completedTasks?.length || 0;
-    const completedMcqsCount = enrollment.completedMCQs?.length || 0;
+const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
+export const mapLessonsToSchema = (lessons = []) => {
+  return lessons.map((lesson, lIdx) => {
+    let blockOrder = 1; 
+    const blocks = [];
 
-    const totalTasks = module.tasks?.length || 0;
-    const totalMcqs = module.mcqs?.length || 0;
-    const totalUnits = totalTasks + totalMcqs;
-
-    if (totalUnits === 0) return 0;
-
-    const completedUnits = completedTasksCount + completedMcqsCount;
-    return Math.min(Math.round((completedUnits / totalUnits) * 100), 100);
-};
-
-// ==========================
-// GET /modules
-// ==========================
-export const getModules = async (req, res) => {
-    try {
-        console.log("User Info:", req.user.id);
-        const userId = req.user?.id;
-        const role = req.user?.role;
-
-        const filter = {};
-        if (role === "student") {
-            filter.status = "Published"; 
-        } else if (role === "tutor") {
-            filter.tutor = userId; 
-        }
-    
-        const modules = await Module.find(filter)
-            .populate("tutor", "name email role")
-            .select("-enrolledStudents");
-
-        let studentEnrollments = [];
-        if (role === "student") {
-            studentEnrollments = await ModuleEnrollment.find({ student: userId }).select("module progressPercent");
-        }
-
-        // Format modules with enrollment and feedback info
-        const formattedModules = modules.map((mod) => {
-            const modObj = mod.toObject({ getters: true, virtuals: true });
-
-            // Enrollment info for students
-            let progress = null;
-            let isEnrolled = false;
-            if (role === "student") {
-                const enrollment = studentEnrollments.find(e => e.module.equals(mod._id));
-                isEnrolled = !!enrollment;
-                if (isEnrolled) progress = enrollment.progressPercent;
-            }
-
-            // Feedback visible to user
-            let feedbackForUser = [];
-            if (role === "student") {
-                feedbackForUser = mod.feedback.filter(f => f.student.toString() === userId);
-            } else if (["tutor", "admin"].includes(role)) {
-                feedbackForUser = mod.feedback;
-            }
-
-            return {
-                ...modObj,
-                isEnrolled,
-                progress,
-                feedback: feedbackForUser,
-            };
-        });
-
-        res.status(200).json({ success: true, data: formattedModules });
-    } catch (error) {
-        console.error("Error fetching modules:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
+    // ===== Lesson Text / Markdown =====
+    if (lesson.body?.trim()) {
+      blocks.push({
+        type: "markdown",
+        title: "Lesson Text",
+        order: blockOrder++,
+        content: safeTrim(lesson.body),
+      });
     }
-};
 
-// ==========================
-// POST /modules  (tutor)
-// ==========================
+    // ===== Video Blocks =====
+    (lesson.videoLinks || []).filter(Boolean).forEach((url) => {
+      blocks.push({
+        type: "video",
+        title: `Video ${blockOrder}`,
+        order: blockOrder++,
+        content: { url: safeTrim(url) },
+      });
+    });
+
+    // ===== Reading / PPT Blocks =====
+    (lesson.readingFiles || []).filter(Boolean).forEach((path) => {
+      blocks.push({
+        type: "ppt",
+        title: `Reading ${blockOrder}`,
+        order: blockOrder++,
+        content: { path: safeTrim(path) },
+      });
+    });
+
+    // ===== Tasks =====
+    (lesson.tasks || []).forEach((t) => {
+      if (t.title?.trim() && t.description?.trim()) {
+        blocks.push({
+          type: "task",
+          title: safeTrim(t.title),
+          order: blockOrder++,
+          content: {
+            instructions: safeTrim(t.description),
+            submissionType: "text",
+            required: t.required ?? true,
+          },
+        });
+      }
+    });
+
+    // ===== MCQ Blocks =====
+    (lesson.mcqBlocks || []).forEach((mcqBlock) => {
+      if (Array.isArray(mcqBlock.questions) && mcqBlock.questions.length > 0) {
+        blocks.push({
+          type: "mcq",
+          title: mcqBlock.title || `MCQ Block ${blockOrder}`,
+          order: blockOrder++, // Use lesson-level order
+          questions: mcqBlock.questions.map((q) => ({
+            questionText: q.questionText,
+            options: q.options.map((o, i) => ({
+              text: o,
+              isCorrect: i === q.correctAnswerIndex,
+            })),
+            type: q.type || "mcq",
+            maxScore: q.maxScore ?? 1,
+          })),
+        });
+      }
+    });
+
+    return {
+      title: safeTrim(lesson.title) || `Lesson ${lIdx + 1}`,
+      order: lIdx + 1,
+      blocks,
+    };
+  });
+};
 export const createModule = async (req, res) => {
-    if (req.user.role !== "tutor") return res.status(403).json({ success: false, message: "Only tutors can create modules" });
+  if (req.user.role !== "tutor")
+    return res.status(403).json({ success: false });
 
-    const {
-        title, description, objectives, videoLinks,
-        readingFileLinks, mcqs, tasks, difficulty, category, tags
-    } = req.body;
+  const { title, description, objectives, difficulty, category, tags, lessons, bannerUrl } = req.body;
+  console.log("Controller req.body", req.body)
+  if (!title?.trim() || !description?.trim())
+    return res.status(400).json({ success: false, message: "Title and description required" });
 
-    if (!title || !description) return res.status(400).json({ success: false, message: "Title and description are required" });
+  try {
+    const module = await Module.create({
+      tutor: req.user.id,
+      title: title.trim(),
+      description: description.trim(),
+      objectives: objectives || [],
+      difficulty,
+      category,
+      tags: tags || [],
+      lessons: mapLessonsToSchema(lessons),
+      bannerUrl: bannerUrl || "",
+      status: "Draft",
+      feedback: [],
+      enrolledStudents: [],
+      history: [],
+      pendingEdit: { isRequested: false, updatedFields: {}, requestedAt: null },
+      pendingAction: null,
+    });
+    console.log("controller, module mapping", module)
+    res.status(201).json({ success: true, data: module });
+  } catch (error) {
+    if (error.code === 11000)
+      return res.status(400).json({ success: false, message: "Module title must be unique" });
+    console.error(error.message)
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+// GET ALL MODULES
+export const getModules = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
 
-    try {
-        const newModule = new Module({
-            tutor: req.user.id,
-            title,
-            description,
-            objectives: objectives || [],
-            videoLinks: videoLinks || [],
-            readingFileLinks: readingFileLinks || [],
-            mcqs: mcqs || [],
-            tasks: tasks || [],
-            feedback: [],
-            status: "Draft",
-            difficulty,
-            category,
-            tags,
-        });
+    const filter = {};
+    if (role === "student") filter.status = "Published";
+    else if (role === "tutor") filter.tutor = userId;
 
-        await newModule.save();
-        res.status(201).json({ success: true, message: "Module created successfully", data: newModule });
-    } catch (error) {
-        console.error("Error creating module:", error.message);
-        if (error.code === 11000) return res.status(400).json({ success: false, message: "Module title must be unique." });
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+    const modules = await Module.find(filter).populate("tutor", "name email role");
+    res.status(200).json({ success: true, data: modules });
+  } catch (error) {
+    console.error("Error fetching modules:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
 
-// ==========================
-// PUT /modules/:id  (tutor)
-// ==========================
+// GET MODULE BY ID
+export const getModuleById = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id))
+    return res.status(400).json({ success: false, message: "Invalid ID" });
+
+  try {
+    let query = Module.findById(id).populate("tutor", "name email role");
+    if (req.user.role === "student") {
+      query = query.populate({ path: "lessons.blocks.questions" });
+    }
+
+    const module = await query;
+    if (!module) return res.status(404).json({ success: false, message: "Module not found" });
+
+    res.status(200).json({ success: true, data: module });
+  } catch (error) {
+    console.error("Error fetching module:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// UPDATE MODULE (Tutor - Draft Only)
 export const updateModule = async (req, res) => {
-    const { id } = req.params;
-    const updateData = { ...req.body };
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id))
+    return res.status(400).json({ success: false });
 
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.status !== "Draft")
+      return res.status(400).json({ success: false, message: "Only Draft modules can be edited" });
 
-    delete updateData.tutor;
-    delete updateData.enrolledStudents;
+    // Map lessons to schema
+    if (req.body.lessons) req.body.lessons = mapLessonsToSchema(req.body.lessons);
 
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
+    Object.assign(module, req.body);
+    module.history.push({
+      action: "edit",
+      performedBy: req.user.id,
+      changes: req.body,
+    });
 
-        const isTutor = req.user.role === "tutor" && module.tutor.toString() === req.user.id;
-        const isAdmin = req.user.role === "admin";
-
-        if (isTutor) {
-            if (module.status === "Draft") {
-                Object.assign(module, updateData);
-                module.history.push({ action: "edit", performedBy: req.user.id, changes: updateData });
-                await module.save();
-                return res.status(200).json({ success: true, message: "Draft module updated successfully", data: module });
-            } else if (module.status === "Published") {
-                module.pendingEdit = { isRequested: true, updatedFields: updateData, requestedAt: new Date() };
-                await module.save();
-                return res.status(200).json({ success: true, message: "Edit request submitted for admin approval", data: module });
-            }
-        }
-
-        if (isAdmin) return res.status(403).json({ success: false, message: "Admins cannot directly edit modules; use approve endpoints" });
-
-        return res.status(403).json({ success: false, message: "Not authorized to update this module" });
-    } catch (error) {
-        console.error("Error updating module:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+    await module.save();
+    res.status(200).json({ success: true, data: module });
+  } catch (error) {
+    console.error("Error updating module:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
-
-// ==========================
-// DELETE /modules/:id  (tutor/admin)
-// ==========================
-export const deleteModule = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-
-        const isTutor = req.user.role === "tutor" && module.tutor.toString() === req.user.id;
-        const isAdmin = req.user.role === "admin";
-
-        if (isTutor) {
-            if (module.status === "Draft") {
-                await ModuleEnrollment.deleteMany({ module: id });
-                await MentorshipSession.deleteMany({ module: id });
-                await module.deleteOne();
-                return res.status(200).json({ success: true, message: "Draft module deleted successfully" });
-            } else if (module.status === "Published") {
-                module.pendingDelete = { isRequested: true, requestedAt: new Date() };
-                await module.save();
-                return res.status(200).json({ success: true, message: "Delete request submitted for admin approval", data: module });
-            }
-        }
-
-        if (isAdmin) {
-            await ModuleEnrollment.deleteMany({ module: id });
-            await MentorshipSession.deleteMany({ module: id });
-            module.history.push({ action: "delete", performedBy: req.user.id, approvedBy: req.user.id });
-            await module.deleteOne();
-            return res.status(200).json({ success: true, message: "Module deleted by admin successfully" });
-        }
-
-        return res.status(403).json({ success: false, message: "Not authorized to delete this module" });
-    } catch (error) {
-        console.error("Error deleting module:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// POST /modules/:id/enroll (student)
-// ==========================
-export const enrollModule = async (req, res) => {
-    const { id: moduleId } = req.params;
-    const studentId = req.user.id;
-    const { hourlyRate, expectedEndDate } = req.body;
-
-    if (req.user.role !== "student") return res.status(403).json({ success: false, message: "Only students can enroll" });
-    try {
-        const module = await Module.findById(moduleId);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-        if (module.status !== "Published") return res.status(400).json({ success: false, message: "Cannot enroll in a module that is not published." });
-
-        const existingEnrollment = await ModuleEnrollment.findOne({ student: studentId, module: moduleId });
-        if (existingEnrollment) return res.status(400).json({ success: false, message: "Already enrolled" });
-
-        const enrollment = new ModuleEnrollment({
-            student: studentId,
-            module: moduleId,
-            tutor: module.tutor,
-            hourlyRate,
-            expectedEndDate,
-            progressPercent: 0,
-        });
-
-        await enrollment.save();
-
-        if (!module.enrolledStudents.some(s => s.equals(studentId))) {
-            module.enrolledStudents.push(studentId);
-            await module.save();
-        }
-
-        res.status(200).json({ success: true, message: "Enrolled successfully", data: enrollment });
-    } catch (error) {
-        console.error("Error enrolling module:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// POST /modules/:moduleId/activity (student)
-// ==========================
-export const recordActivity = async (req, res) => {
-    const { moduleId } = req.params;
-    const studentId = req.user.id;
-    const { type, itemId } = req.body;
-
-    if (!["task", "mcq"].includes(type)) return res.status(400).json({ success: false, message: "Invalid activity type" });
-    if (!mongoose.Types.ObjectId.isValid(moduleId)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(moduleId).select("tasks mcqs");
-        const enrollment = await ModuleEnrollment.findOne({ student: studentId, module: moduleId });
-
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-        if (!enrollment) return res.status(400).json({ success: false, message: "Student is not enrolled in this module" });
-
-        let itemFound = false;
-        let updateSuccessful = false;
-
-        if (type === "task") {
-            if (module.tasks.some(t => t._id.equals(itemId))) itemFound = true;
-            if (itemFound && !enrollment.completedTasks.some(t => t.equals(itemId))) {
-                enrollment.completedTasks.push(itemId);
-                updateSuccessful = true;
-            }
-        } else if (type === "mcq") {
-            if (module.mcqs.some(m => m._id.equals(itemId))) itemFound = true;
-            if (itemFound && !enrollment.completedMCQs.some(m => m.equals(itemId))) {
-                enrollment.completedMCQs.push(itemId);
-                updateSuccessful = true;
-            }
-        }
-
-        if (!itemFound) return res.status(404).json({ success: false, message: `${type} not found in the module` });
-        if (!updateSuccessful) return res.status(200).json({ success: true, message: "Activity already recorded", progress: enrollment.progressPercent });
-
-        enrollment.progressPercent = computeProgressPercent(module, enrollment);
-        await enrollment.save();
-
-        res.status(200).json({ success: true, message: "Activity recorded and progress updated", progress: enrollment.progressPercent });
-    } catch (error) {
-        console.error("Error recording activity:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// PUT /modules/:moduleId/progress (tutor/admin)
-// ==========================
-export const updateProgress = async (req, res) => {
-    const { moduleId } = req.params;
-    const { studentId, progressPercent } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(moduleId) || !mongoose.Types.ObjectId.isValid(studentId)) return res.status(400).json({ success: false, message: "Invalid module or student ID" });
-
-    const newProgress = Number(progressPercent);
-    if (isNaN(newProgress) || newProgress < 0 || newProgress > 100) return res.status(400).json({ success: false, message: "Progress must be 0-100" });
-
-    try {
-        const module = await Module.findById(moduleId).select("tutor");
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-
-        if (module.tutor.toString() !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ success: false, message: "Not authorized" });
-
-        const enrollment = await ModuleEnrollment.findOneAndUpdate(
-            { module: moduleId, student: studentId },
-            { progressPercent: newProgress },
-            { new: true }
-        );
-
-        if (!enrollment) return res.status(404).json({ success: false, message: "Enrollment record not found" });
-
-        res.status(200).json({ success: true, message: `Progress updated to ${newProgress}%`, data: enrollment.progressPercent });
-    } catch (error) {
-        console.error("Error updating progress:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// POST /modules/:moduleId/feedback (tutor/admin)
-// ==========================
-export const giveFeedback = async (req, res) => {
-    const { moduleId } = req.params;
-    const { studentId, feedbackText } = req.body;
-    const tutorId = req.user.id;
-
-    if (!mongoose.Types.ObjectId.isValid(moduleId) || !mongoose.Types.ObjectId.isValid(studentId)) return res.status(400).json({ success: false, message: "Invalid module or student ID" });
-    if (!feedbackText || typeof feedbackText !== 'string' || feedbackText.trim().length === 0) return res.status(400).json({ success: false, message: "Feedback text is required" });
-
-    try {
-        const module = await Module.findById(moduleId);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-
-        if (module.tutor.toString() !== tutorId && req.user.role !== 'admin') return res.status(403).json({ success: false, message: "Not authorized" });
-
-        const existingFeedbackIndex = module.feedback.findIndex(f => f.student.toString() === studentId);
-
-        const newFeedbackEntry = { student: studentId, tutor: tutorId, text: feedbackText, createdAt: new Date() };
-
-        if (existingFeedbackIndex !== -1) {
-            module.feedback[existingFeedbackIndex] = newFeedbackEntry;
-            await module.save();
-            res.status(200).json({ success: true, message: "Feedback updated", data: newFeedbackEntry });
-        } else {
-            module.feedback.push(newFeedbackEntry);
-            await module.save();
-            res.status(201).json({ success: true, message: "Feedback recorded", data: newFeedbackEntry });
-        }
-    } catch (error) {
-        console.error("Error giving feedback:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// PUT /modules/:id/approve (admin)
-// ==========================
-export const approveModule = async (req, res) => {
-    const { id } = req.params;
-    if (req.user.role !== "admin") return res.status(403).json({ success: false, message: "Only admins can approve modules" });
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-
-        module.status = "Published";
-        await module.save();
-        res.status(200).json({ success: true, message: "Module published successfully", data: module });
-    } catch (error) {
-        console.error("Error publishing module:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// PUT /modules/:id/reject (admin)
-// ==========================
-export const rejectModule = async (req, res) => {
-    const { id } = req.params;
-    if (req.user.role !== "admin") return res.status(403).json({ success: false, message: "Only admins can reject modules" });
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-
-        module.status = "Draft";
-        await module.save();
-        res.status(200).json({ success: true, message: "Module status reverted to Draft", data: module });
-    } catch (error) {
-        console.error("Error rejecting module:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// PUT /modules/:id/approveEdit (admin)
-// ==========================
-export const approveEditRequest = async (req, res) => {
-    const { id } = req.params;
-    if (req.user.role !== "admin") return res.status(403).json({ success: false, message: "Only admins can approve edit requests" });
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-        if (!module.pendingEdit?.isRequested) return res.status(400).json({ success: false, message: "No pending edit request found" });
-
-        Object.assign(module, module.pendingEdit.updatedFields);
-        module.history.push({
-            action: "edit",
-            performedBy: module.tutor,
-            approvedBy: req.user.id,
-            changes: module.pendingEdit.updatedFields
-        });
-
-        module.pendingEdit = { isRequested: false, updatedFields: {}, requestedAt: null };
-        await module.save();
-        res.status(200).json({ success: true, message: "Edit request approved and applied", data: module });
-    } catch (error) {
-        console.error("Error approving edit request:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ==========================
-// PUT /modules/:id/approveDelete (admin)
-// ==========================
-export const approveDeleteRequest = async (req, res) => {
-    const { id } = req.params;
-    if (req.user.role !== "admin") return res.status(403).json({ success: false, message: "Only admins can approve delete requests" });
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
-
-    try {
-        const module = await Module.findById(id);
-        if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-        if (!module.pendingDelete?.isRequested) return res.status(400).json({ success: false, message: "No pending delete request found" });
-
-        await ModuleEnrollment.deleteMany({ module: id });
-        await MentorshipSession.deleteMany({ module: id });
-        module.history.push({ action: "delete", performedBy: module.tutor, approvedBy: req.user.id });
-        await module.deleteOne();
-
-        res.status(200).json({ success: true, message: "Delete request approved and module removed" });
-    } catch (error) {
-        console.error("Error approving delete request:", error.message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-
+// REQUEST APPROVAL (Tutor)
 export const requestApproval = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "tutor") return res.status(403).json({ success: false, message: "Only tutors can request approval" });
-  if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid module ID" });
+  if (req.user.role !== "tutor") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.status !== "Draft")
+      return res.status(400).json({ success: false, message: "Only Draft modules can request approval" });
+
+    module.status = "Pending";
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Approval requested", data: module });
+  } catch (error) {
+    console.error("Error requesting approval:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// APPROVE MODULE (Admin)
+export const approveModule = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.status !== "Pending")
+      return res.status(400).json({ success: false, message: "Module not pending" });
+
+    module.status = "Published";
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Module published", data: module });
+  } catch (error) {
+    console.error("Error approving module:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// REJECT MODULE (Admin)
+export const rejectModule = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.status !== "Pending")
+      return res.status(400).json({ success: false, message: "Module not pending" });
+
+    module.status = "Draft";
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Module reverted to Draft", data: module });
+  } catch (error) {
+    console.error("Error rejecting module:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// REQUEST DELETE (Tutor)
+export const requestDelete = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "tutor") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.status !== "Published")
+      return res.status(400).json({ success: false, message: "Only Published modules can request deletion" });
+
+    module.status = "Pending";
+    module.pendingAction = "delete";
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Delete request submitted", data: module });
+  } catch (error) {
+    console.error("Error requesting delete:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// APPROVE DELETE (Admin → ARCHIVE)
+export const approveDeleteRequest = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (module.pendingAction !== "delete")
+      return res.status(400).json({ success: false, message: "No delete request pending" });
+
+    module.status = "Archived";
+    module.pendingAction = null;
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Module archived successfully", data: module });
+  } catch (error) {
+    console.error("Error approving delete:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// REQUEST EDIT (Tutor)
+export const requestEdit = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "tutor")
+    return res.status(403).json({ success: false, message: "Only tutors can request edits" });
+
+  const updates = req.body;
+  if (!updates || Object.keys(updates).length === 0)
+    return res.status(400).json({ success: false, message: "No changes provided" });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-    if (module.status !== "Draft") return res.status(400).json({ success: false, message: "Only draft modules can request approval" });
+    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.status !== "Published")
+      return res.status(400).json({ success: false, message: "Only Published modules can request edits" });
 
-    module.status = "Pending";
-    module.pendingEdit = { isRequested: true, requestedAt: new Date() }; // optional: track request date
+    // Map lessons to schema if they are part of the edit request
+    if (updates.lessons) updates.lessons = mapLessonsToSchema(updates.lessons);
+
+    module.pendingEdit = {
+      isRequested: true,
+      updatedFields: updates,
+      requestedAt: new Date(),
+    };
+
+    module.history.push({
+      action: "edit-request",
+      performedBy: req.user.id,
+      changes: updates,
+    });
+
     await module.save();
 
-    res.status(200).json({ success: true, message: "Approval requested successfully", data: module });
+    res.status(200).json({
+      success: true,
+      message: "Edit request submitted for admin approval",
+      data: module,
+    });
   } catch (error) {
-    console.error("Error requesting approval:", error.message);
+    console.error("Error requesting edit:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// APPROVE EDIT REQUEST (Admin)
+export const approveEditRequest = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+
+  try {
+    const module = await Module.findById(id);
+    if (!module) return res.status(404).json({ success: false });
+    if (!module.pendingEdit?.isRequested)
+      return res.status(400).json({ success: false, message: "No edit request pending" });
+
+    // Apply the updates (including schema-compliant lessons)
+    const updates = module.pendingEdit.updatedFields;
+    if (updates.lessons) updates.lessons = mapLessonsToSchema(updates.lessons);
+    Object.assign(module, updates);
+
+    // Reset pendingEdit
+    module.pendingEdit = { isRequested: false, updatedFields: {}, requestedAt: null };
+
+    module.history.push({
+      action: "edit-approved",
+      performedBy: module.tutor,
+      approvedBy: req.user.id,
+      changes: updates,
+    });
+
+    await module.save();
+
+    res.status(200).json({ success: true, message: "Edit request approved", data: module });
+  } catch (error) {
+    console.error("Error approving edit:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

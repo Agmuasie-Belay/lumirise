@@ -1,7 +1,7 @@
 import { Flex, Box, Text, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { Menu, X } from "lucide-react";
 import { motion } from "framer-motion";
-import ProfileAvatar from "../profile/ProfileAvatar";
+import ProfileAvatar from "../../pages/student/profile/ProfileAvatar";
 import { useAuthStore } from "../../store/auth";
 
 const MotionFlex = motion(Flex);

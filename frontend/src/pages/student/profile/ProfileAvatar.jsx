@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, Box, Flex, Text, Button } from "@chakra-ui/react";
 import { LogOut, User } from "lucide-react";
-import { useAuthStore } from "../../store/auth";
+import { useAuthStore } from "../../../store/auth";
 
 const MotionBox = motion(Box);
 
@@ -92,7 +92,7 @@ export default function ProfileAvatar({ imageUrl = "" }) {
             {/* User info */}
             <Box px={4} py={3} borderBottom="1px solid" borderColor="gray.200">
               <Text fontWeight="bold">{username}</Text>
-              <Text fontSize="sm" color="gray.500">{role.toUpperCase()}</Text>
+              {/* <Text fontSize="sm" color="gray.500">{role.toUpperCase()}</Text> */}
             </Box>
 
             {/* Menu items */}
@@ -101,7 +101,7 @@ export default function ProfileAvatar({ imageUrl = "" }) {
                 variant="ghost"
                 justifyContent="flex-start"
                 leftIcon={<User size={18} />}
-                onClick={() => navigateTo("/profile")}
+                onClick={() => navigateTo("/student/profile")}
                 _hover={{ bg: "gray.100" }}
                 size="sm"
               >

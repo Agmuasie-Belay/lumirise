@@ -1,29 +1,38 @@
 import express from "express";
 import { protect } from "../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
-import {authorizeRoles} from "../middlewares/roleMiddleware.js";
-import { 
-    getStudentEnrollments, 
-    getTutorStudents,
-    enrollStudent, // Added for POST
-    updateProgress // Added for PUT
-} from "../controllers/enrollment.controller.js";
+import {
+  getStudentEnrollments,
+  getTutorStudents,
+  enrollStudent,
+  submitQuiz,
+  getQuiz,
+  giveFeedback,
+  recordActivity,
+  getStudentEnrollmentByModule,
+  checkStudentEnrollment,
+  submitTask,
+  reviewTask,
+  fetchTask,
+} from "../controllers/enrollment.controller.js"; 
 
 const router = express.Router();
 
-// -------------------- Student Enrollment Access --------------------
-// GET /enrollment/student: Student fetches their list of enrollments
+// Student routes
 router.get("/student", protect, authorizeRoles("student"), getStudentEnrollments);
-
-// POST /enrollment/enroll/:moduleId: Student enrolls in a specific module
 router.post("/enroll/:moduleId", protect, authorizeRoles("student"), enrollStudent);
+router.post("/:moduleId/activity", protect, authorizeRoles("student"), recordActivity);
+router.post("/:enrollmentId/quiz", protect, authorizeRoles("student"), submitQuiz);
+router.get("/:enrollmentId/quiz/:blockId", protect, authorizeRoles("student"), getQuiz);
+router.post("/:enrollmentId/task/:taskId/submit", protect, authorizeRoles("student"), submitTask);
+router.get("/:enrollmentId/task/:taskId", protect, authorizeRoles("student"), fetchTask);
+router.get("/student/:moduleId/status", protect, authorizeRoles("student"), checkStudentEnrollment);
 
-
-// -------------------- Tutor Access --------------------
-// GET /enrollment/tutor: Tutor fetches a list of all their enrolled students
+// Turor routes
+router.post("/:moduleId/feedback", protect, authorizeRoles("tutor"), giveFeedback);
 router.get("/tutor", protect, authorizeRoles("tutor"), getTutorStudents);
-
-// PUT /enrollment/progress/:enrollmentId: Tutor manually updates progress for a specific enrollment
-router.put("/progress/:enrollmentId", protect, authorizeRoles("tutor"), updateProgress);
+router.get("/enrollment/:moduleId", protect, getStudentEnrollmentByModule);
+router.put("/:enrollmentId/task/:taskId/review", protect, authorizeRoles("tutor", "admin"), reviewTask);
 
 export default router;

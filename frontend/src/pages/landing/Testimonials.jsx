@@ -2,24 +2,24 @@ import { Box, Heading, Text, VStack, Avatar, HStack } from "@chakra-ui/react";
 import Slider from "react-slick";
 
 const Testimonials = () => {
-  const testimonials = [
+   const testimonials = [
     {
-      name: "John Doe",
-      role: "Full Stack Developer",
+      name: "Former Trainee",
+      role: "Aspiring Data Analyst",
       feedback:
-        "LumiRise transformed my coding skills. The modules are clear, practical, and fun!",
+        "LumiRise's Digital Literacy training helped me confidently use Excel and Google Docs for my assignments and projects.",
     },
     {
-      name: "Jane Smith",
-      role: "Data Scientist",
+      name: "Former Trainee",
+      role: "Recent Graduate",
       feedback:
-        "The machine learning module gave me the confidence to build my first ML project.",
+        "The Job Readiness sessions prepared me for interviews, CV writing, and workplace professionalism. I feel ready to enter the workforce.",
     },
     {
-      name: "Ali Ibrahim",
-      role: "Embedded Systems Engineer",
+      name: "Former Trainee",
+      role: "Junior Developer",
       feedback:
-        "Hands-on projects made learning embedded systems enjoyable and effective.",
+        "The Machine Learning course made complex concepts easy to understand, and the hands-on exercises gave me real coding experience.",
     },
   ];
 
@@ -39,7 +39,7 @@ const Testimonials = () => {
   return (
     <Box py={20} bg="gray.100" >
       <Heading textAlign="center" mb={12} fontSize="4xl">
-        What Our Students Say
+        Hear From Our Certified Graduates
       </Heading>
 
       <Slider {...sliderSettings}>

@@ -22,12 +22,11 @@ const StudentHome = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-      fetchModules();
+    fetchModules();
   }, [fetchModules]);
-  
+
   return (
-    
-       <Container maxW="container.lg" py={10}>
+    <Container maxW="container.lg" py={4}>
       <VStack spacing={10} align="center">
         {/* Vision Statement Section */}
         {currentUser?.visionStatement && (

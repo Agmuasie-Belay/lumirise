@@ -2,217 +2,111 @@ import { create } from "zustand";
 import { apiFetch } from "./api";
 const API_URL = import.meta.env.VITE_API_URL;
 
+const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
 export const useModuleStore = create((set, get) => ({
   modules: [],
+  currentModule: null,
+
   setModules: (modules) => set({ modules }),
-
-  // -------------------------
-  // Create a new module
-  // -------------------------
- createModule: async (newModule) => {
-  try {
-    const userRole = JSON.parse(localStorage.getItem("role"));
-    const tutorId = JSON.parse(localStorage.getItem("user"))?.id;
-    const token = localStorage.getItem("token");
-
-    if (userRole !== "tutor") {
-      return { success: false, message: "Only tutors can create modules" };
-    }
-
-    const { title, description } = newModule;
-    if (!title || !description) {
-      return { success: false, message: "Please provide all required fields: title, description" };
-    }
-    //Clean arrays and ensure MCQs are well-structured
-    // Assuming you have `newModule` state object with all module info
-const moduleToSend = {
-  title: newModule.title.trim(),
-  description: newModule.description.trim(),
-  objectives: (newModule.objectives || [])
-    .map(o => o.trim())
-    .filter(Boolean),
-  tutor: tutorId, // the current logged-in tutor's ID
-  difficulty: newModule.difficulty,
-  category: newModule.category.trim(),
-  tags: (newModule.tags || []).map(t => t.trim()).filter(Boolean),
-  status: "Draft", // default status
-
-  // Merge lessons with their tasks and MCQs
-  lessons: (newModule.lessons || []).map((lesson, idx) => ({
-    title: lesson.title.trim(),
-    body: lesson.body.trim(),
-    order: lesson.order ?? idx + 1,
-    videoLinks: (lesson.videoLinks || []).filter(v => v.trim() !== ""),
-    readingFiles: (lesson.readingFiles || []).filter(r => r.trim() !== ""),
-
-    // Include only tasks that belong to this lesson
-    tasks: (newModule.tasks || [])
-      .filter(t => t.lessonOrder === lesson.order)
-      .map(t => ({
-        title: t.title.trim(),
-        description: t.description.trim(),
-        required: t.required ?? true,
-        order: t.order ?? 1
-      })),
-
-    // Include only MCQs that belong to this lesson
-    mcqs: (newModule.mcqs || [])
-      .filter(m => m.lessonOrder === lesson.order)
-      .map(m => ({
-        question: m.question.trim(),
-        options: (m.options || []).filter(o => o.trim() !== ""),
-        correctAnswer: m.answer.trim(),
-        order: m.order ?? 1
-      }))
-  }))
-};
-
-// Send to backend
-
-
-    // =============================================
-// CLEAN + MODEL-COMPLIANT MODULE BUILDER
-// =============================================
-const safeTrim = (value) =>
-  typeof value === "string" ? value.trim() : value;
-
-// Build lessons safely
-const cleanedLessons = Array.isArray(newModule.lessons)
-  ? newModule.lessons.map((lesson, index) => ({
-      title: safeTrim(lesson.title) || "",
-      body: safeTrim(lesson.body) || "",
-      order: lesson.order ?? index + 1,
-
-      videoLinks: Array.isArray(lesson.videoLinks)
-        ? lesson.videoLinks.map(safeTrim).filter(Boolean)
-        : [],
-
-      readingFiles: Array.isArray(lesson.readingFiles)
-        ? lesson.readingFiles.map(safeTrim).filter(Boolean)
-        : [],
-
-      // ---------------------
-      // TASKS INSIDE LESSON
-      // ---------------------
-      tasks: Array.isArray(lesson.tasks)
-        ? lesson.tasks.map((t, ti) => ({
-            title: safeTrim(t.title) || "",
-            description: safeTrim(t.description) || "",
-            required: t.required ?? true,
-            estimatedTime: t.estimatedTime ?? null,
-            order: t.order ?? ti + 1,
-          }))
-        : [],
-
-      // ---------------------
-      // MCQs INSIDE LESSON
-      // ---------------------
-      mcqs: Array.isArray(lesson.mcqs)
-        ? lesson.mcqs.map((m, mi) => ({
-            question: safeTrim(m.question) || "",
-            options: Array.isArray(m.options)
-              ? m.options.map(safeTrim).filter(Boolean)
-              : [],
-            correctAnswer: safeTrim(m.correctAnswer) || "",
-            order: m.order ?? mi + 1,
-          }))
-        : [],
-    }))
-  : [];
-
-// =============================================
-// FINAL CLEAN MODULE OBJECT TO SEND TO API
-// =============================================
-// moduleToSend = {
-//   title: safeTrim(newModule.title),
-//   description: safeTrim(newModule.description),
-
-//   objectives: Array.isArray(newModule.objectives)
-//     ? newModule.objectives.map(safeTrim).filter(Boolean)
-//     : [],
-
-//   tutor: newModule.tutor, 
-
-//   lessons: cleanedLessons,
-
-//   hourlyRate: newModule.hourlyRate ?? null,
-//   category: safeTrim(newModule.category) || "",
-//   difficulty: newModule.difficulty || "beginner",
-
-//   tags: Array.isArray(newModule.tags)
-//     ? newModule.tags.map(safeTrim).filter(Boolean)
-//     : [],
-
-//   startDate: newModule.startDate || null,
-//   endDate: newModule.endDate || null,
-
-//   status: "Draft",
-// };
-
-
-    const data = await apiFetch(`${API_URL}/api/modules`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(moduleToSend),
-    });
-
-    if (!data.success) {
-      return { success: false, message: data.message || "Failed to create module" };
-    }
-
-    set((state) => ({ modules: [...state.modules, data.data] }));
-
-    return { success: true, message: "Module created successfully", data: data.data };
-  } catch (error) {
-    console.error("Error creating module:", error);
-    return { success: false, message: error.message || "Failed to create module" };
-  }
-},
-
+  setCurrentModule: (module) => set({ currentModule: module }),
 
   // -------------------------
   // Fetch modules
   // -------------------------
- fetchModules: async () => {
-  try {
-    const data = await apiFetch(`${API_URL}/api/modules`);
-    const userRole = JSON.parse(localStorage.getItem("role"));
-    const userId = JSON.parse(localStorage.getItem("user"))?.id;
-
-    let filteredModules = data.data;
-    if (userRole === "student") {
-      // Students see only approved/published modules
-      filteredModules = filteredModules.filter((m) => m.status === "Published");
-    } else if (userRole === "tutor") {
-      // Tutors see all modules they created
-      filteredModules = filteredModules.filter((m) => m.tutor?._id === userId);
-    } else if (userRole === "admin") {
-      // Admins see only pending or approved modules
-      filteredModules = filteredModules.filter(
-        (m) => m.status === "Pending" || m.status === "Published"
-      );
-    }
-
-    set({ modules: filteredModules });
-  } catch (error) {
-    console.error("Fetch modules error:", error.message);
-  }
-},
-
-
-  // -------------------------
-  // Delete module (Tutor)
-  // -------------------------
-  deleteModule: async (module_id) => {
+  fetchModules: async () => {
     try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}`, { method: "DELETE" });
-      set((state) => ({ modules: state.modules.filter((m) => m._id !== module_id) }));
-      return { success: true, message: data.message };
+      const data = await apiFetch(`${API_URL}/api/modules`);
+      const userRole = JSON.parse(localStorage.getItem("role"));
+      const userId = JSON.parse(localStorage.getItem("user"))?.id;
+
+      let filteredModules = data.data;
+
+      if (userRole === "student") {
+        filteredModules = filteredModules.filter(
+          (m) => m.status === "Published",
+        );
+      } else if (userRole === "tutor") {
+        filteredModules = filteredModules.filter(
+          (m) => m.tutor?._id === userId,
+        );
+      } else if (userRole === "admin") {
+        filteredModules = filteredModules.filter(
+          (m) => m.status === "Pending" || m.status === "Published",
+        );
+      }
+
+      set({ modules: filteredModules });
+    } catch (err) {
+      console.error("Fetch modules error:", err.message);
+    }
+  },
+
+  fetchModuleById: async (id) => {
+    try {
+      const data = await apiFetch(`${API_URL}/api/modules/${id}`);
+      if (data.success) {
+        set({ currentModule: data.data });
+        return data.data;
+      }
+      console.log(currentModule);
+      return null;
+    } catch (err) {
+      console.error("Fetch module by ID error:", err);
+      return null;
+    }
+  },
+
+  // -------------------------
+  // Create module (Tutor)
+  // -------------------------
+  createModule: async (newModule) => {
+    try {
+      const tutorId = JSON.parse(localStorage.getItem("user"))?.id;
+      const userRole = JSON.parse(localStorage.getItem("role"));
+      const token = localStorage.getItem("token");
+
+
+      if (userRole !== "tutor")
+        return { success: false, message: "Only tutors can create modules" };
+
+      const moduleToSend = {
+        ...newModule,
+        tutor: tutorId,
+        lessons: newModule.lessons,
+        objectives: (newModule.objectives || []).map(safeTrim).filter(Boolean),
+        tags: (newModule.tags || []).map(safeTrim).filter(Boolean),
+        enrolledStudents: [],
+        bannerUrl: newModule.bannerUrl || "",
+      };
+      console.log("Module from the store", moduleToSend)
+      const data = await apiFetch(`${API_URL}/api/modules`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(moduleToSend),
+      });
+
+      if (!data.success)
+        return {
+          success: false,
+          message: data.message || "Failed to create module",
+        };
+
+      set((state) => ({ modules: [...state.modules, data.data] }));
+
+      return {
+        success: true,
+        message: "Module created successfully",
+        data: data.data,
+      };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error("Error creating module:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to create module",
+      };
     }
   },
 
@@ -221,116 +115,179 @@ const cleanedLessons = Array.isArray(newModule.lessons)
   // -------------------------
   updateModule: async (module_id, updatedModule) => {
     try {
+      const moduleToSend = {
+        ...updatedModule,
+        lessons: updatedModule.lessons,
+        objectives: (updatedModule.objectives || [])
+          .map(safeTrim)
+          .filter(Boolean),
+        tags: (updatedModule.tags || []).map(safeTrim).filter(Boolean),
+      };
+
       const data = await apiFetch(`${API_URL}/api/modules/${module_id}`, {
         method: "PUT",
-        body: JSON.stringify(updatedModule),
-      });
-      set((state) => ({
-        modules: state.modules.map((m) => (m._id === module_id ? data.data : m)),
-      }));
-      return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  },
-
-  // -------------------------
-  // Enroll student in module
-  // -------------------------
-  enrollModule: async (module_id) => {
-    try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/enroll`, { method: "POST" });
-      return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  },
-
-  // -------------------------
-  // Record student progress
-  // -------------------------
-  recordActivity: async (module_id, progress) => {
-    try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/progress`, {
-        method: "PUT",
-        body: JSON.stringify({ progress }),
-      });
-
-      set((state) => ({
-        modules: state.modules.map((m) => (m._id === module_id ? { ...m, progress } : m)),
-      }));
-
-      return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  },
-
-  // -------------------------
-  // Tutor feedback per student per module
-  // -------------------------
-  giveFeedback: async (module_id, payload) => {
-    try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/feedback`, {
-        method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(moduleToSend),
       });
 
       set((state) => ({
         modules: state.modules.map((m) =>
-          m._id === module_id ? { ...m, feedback: [...(m.feedback || []), data.data] } : m
+          m._id === module_id ? data.data : m,
         ),
       }));
 
-      return { success: true, message: "Feedback submitted successfully" };
+      return { success: true, message: data.message, data: data.data };
     } catch (error) {
+      console.error("Error updating module:", error);
       return { success: false, message: error.message };
     }
   },
 
   // -------------------------
-  // Admin approval actions
+  // Delete / archive module
+  // -------------------------
+  requestDelete: async (module_id) => {
+    try {
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/request-delete`,
+        { method: "PUT" },
+      );
+      set((state) => ({
+        modules: state.modules.map((m) =>
+          m._id === module_id
+            ? { ...m, pendingAction: "delete", status: "Pending" }
+            : m,
+        ),
+      }));
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  },
+
+  approveDelete: async (module_id) => {
+    try {
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/approve-delete`,
+        { method: "PUT" },
+      );
+      set((state) => ({
+        modules: state.modules.map((m) =>
+          m._id === module_id
+            ? { ...m, pendingAction: null, status: "Archived" }
+            : m,
+        ),
+      }));
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  },
+
+  // -------------------------
+  // Request / approve edit
+  // -------------------------
+  requestEdit: async (module_id, updates) => {
+    try {
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/request-edit`,
+        {
+          method: "PUT",
+          body: JSON.stringify(updates),
+        },
+      );
+      set((state) => ({
+        modules: state.modules.map((m) =>
+          m._id === module_id
+            ? {
+                ...m,
+                pendingEdit: { isRequested: true, updatedFields: updates },
+              }
+            : m,
+        ),
+      }));
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  },
+
+  approveEdit: async (module_id) => {
+    try {
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/approve-edit`,
+        { method: "PUT" },
+      );
+      set((state) => ({
+        modules: state.modules.map((m) =>
+          m._id === module_id
+            ? {
+                ...m,
+                pendingEdit: { isRequested: false, updatedFields: {} },
+                ...data.data,
+              }
+            : m,
+        ),
+      }));
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  },
+
+  // -------------------------
+  // Approval / reject (admin)
   // -------------------------
   approveModule: async (module_id) => {
     try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/approve`, { method: "PUT" });
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/approve`,
+        { method: "PUT" },
+      );
       set((state) => ({
-        modules: state.modules.map((m) => (m._id === module_id ? { ...m, status: "approved" } : m)),
+        modules: state.modules.map((m) =>
+          m._id === module_id ? { ...m, status: "Published" } : m,
+        ),
       }));
       return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: error.message };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
   },
 
   rejectModule: async (module_id) => {
     try {
-      const data = await apiFetch(`${API_URL}/api/modules/${module_id}/reject`, { method: "PUT" });
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/reject`,
+        { method: "PUT" },
+      );
       set((state) => ({
-        modules: state.modules.map((m) => (m._id === module_id ? { ...m, status: "rejected" } : m)),
+        modules: state.modules.map((m) =>
+          m._id === module_id ? { ...m, status: "Draft" } : m,
+        ),
       }));
       return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: error.message };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
   },
+
   // -------------------------
-// Tutor requests approval
-// -------------------------
-requestApproval: async (module_id) => {
-  try {
-    const data = await apiFetch(`${API_URL}/api/modules/${module_id}/request-approval`, { method: "PUT" });
-    set((state) => ({
-      modules: state.modules.map((m) => 
-        m._id === module_id ? { ...m, status: "Pending" } : m
-      ),
-    }));
-    return { success: true, message: data.message };
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
-},
-
+  // Request approval (Tutor)
+  // -------------------------
+  requestApproval: async (module_id) => {
+    try {
+      const data = await apiFetch(
+        `${API_URL}/api/modules/${module_id}/request-approval`,
+        { method: "PUT" },
+      );
+      set((state) => ({
+        modules: state.modules.map((m) =>
+          m._id === module_id ? { ...m, status: "Pending" } : m,
+        ),
+      }));
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  },
 }));
-
-

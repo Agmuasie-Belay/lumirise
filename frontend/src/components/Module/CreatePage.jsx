@@ -26,12 +26,24 @@ const CreateModulePage = () => {
     objectives: "",
     difficulty: "beginner",
     category: "",
-    tags: [],
+    tags: "",
     lessons: [
       { title: "", body: "", videoLinks: [""], readingFiles: [""], order: 1 },
     ],
-    tasks: [{ title: "", description: "", required: true }],
-    mcqs: [{ question: "", options: ["", ""], answer: "", lessonOrder: "" }],
+    tasks: [{ title: "", description: "", required: true, lessonOrder: 1 }],
+    mcqBlocks: [
+      {
+        lessonOrder: 1,
+        title: "MCQ Block 1",
+        questions: [
+          {
+            questionText: "",
+            options: ["", ""],
+            correctAnswerIndex: 0,
+          },
+        ],
+      },
+    ],
   });
 
   const [loading, setLoading] = useState(false);
@@ -39,7 +51,7 @@ const CreateModulePage = () => {
   const { createModule } = useModuleStore();
   const navigate = useNavigate();
 
-  // Access check
+  // Access control
   useEffect(() => {
     const role = JSON.parse(localStorage.getItem("role"));
     if (role !== "tutor") {
@@ -54,166 +66,163 @@ const CreateModulePage = () => {
     }
   }, [navigate, toast]);
 
-  // Step navigation
-  const nextStep = () => setStep((s) => Math.min(s + 1, 5));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  // ===== Generic handlers =====
+  const handleChange = (key, value) =>
+    setNewModule({ ...newModule, [key]: value });
 
-  // Generic change handlers
-  const handleChange = (key, value) => setNewModule({ ...newModule, [key]: value });
-
-  // ===== Lessons =====
-  const handleLessonChange = (idx, key, value) => {
-    const updated = [...newModule.lessons];
-    updated[idx][key] = value;
-    setNewModule({ ...newModule, lessons: updated });
+  const handleArrayChange = (arrName, idx, key, value) => {
+    const arr = [...newModule[arrName]];
+    arr[idx][key] = value;
+    setNewModule({ ...newModule, [arrName]: arr });
   };
 
-  const handleLessonArrayChange = (lessonIdx, field, idx, value) => {
-    const updated = [...newModule.lessons];
-    updated[lessonIdx][field][idx] = value;
-    setNewModule({ ...newModule, lessons: updated });
+  const handleNestedArrayChange = (arrName, idx, field, fieldIdx, value) => {
+    const arr = [...newModule[arrName]];
+    arr[idx][field][fieldIdx] = value;
+    setNewModule({ ...newModule, [arrName]: arr });
   };
 
-  const addLessonArray = (lessonIdx, field) => {
-    const updated = [...newModule.lessons];
-    updated[lessonIdx][field].push("");
-    setNewModule({ ...newModule, lessons: updated });
-  };
-
-  const removeLessonArray = (lessonIdx, field, idx) => {
-    const updated = [...newModule.lessons];
-    updated[lessonIdx][field].splice(idx, 1);
-    setNewModule({ ...newModule, lessons: updated });
-  };
-
-  const addLesson = () => {
+  const addArrayItem = (arrName, defaultItem) =>
     setNewModule({
       ...newModule,
-      lessons: [
-        ...newModule.lessons,
-        { title: "", body: "", videoLinks: [""], readingFiles: [""], order: newModule.lessons.length + 1 },
-      ],
+      [arrName]: [...newModule[arrName], defaultItem],
     });
+  const removeArrayItem = (arrName, idx) => {
+    const arr = [...newModule[arrName]];
+    arr.splice(idx, 1);
+    setNewModule({ ...newModule, [arrName]: arr });
+  };
+  const addMcqQuestion = (blockIdx) => {
+    const blocks = [...newModule.mcqBlocks];
+    blocks[blockIdx].questions.push({
+      questionText: "",
+      options: ["", ""],
+      correctAnswerIndex: 0,
+    });
+    setNewModule({ ...newModule, mcqBlocks: blocks });
   };
 
-  const removeLesson = (idx) => {
-    const updated = [...newModule.lessons];
-    updated.splice(idx, 1);
-    setNewModule({ ...newModule, lessons: updated });
+  const addNestedArrayItem = (arrName, idx, field) => {
+    const arr = [...newModule[arrName]];
+    arr[idx][field].push("");
+    setNewModule({ ...newModule, [arrName]: arr });
+  };
+  const removeNestedArrayItem = (arrName, idx, field, fieldIdx) => {
+    const arr = [...newModule[arrName]];
+    arr[idx][field].splice(fieldIdx, 1);
+    setNewModule({ ...newModule, [arrName]: arr });
   };
 
-  // ===== Tasks =====
-  const handleTaskChange = (idx, key, value) => {
-    const updated = [...newModule.tasks];
-    updated[idx][key] = value;
-    setNewModule({ ...newModule, tasks: updated });
-  };
-
-  const addTask = () => setNewModule({ ...newModule, tasks: [...newModule.tasks, { title: "", description: "", required: true }] });
-  const removeTask = (idx) => {
-    const updated = [...newModule.tasks];
-    updated.splice(idx, 1);
-    setNewModule({ ...newModule, tasks: updated });
-  };
-
-  // ===== MCQs =====
-  const handleMCQChange = (idx, key, value) => {
-    const updated = [...newModule.mcqs];
-    updated[idx][key] = value;
-    setNewModule({ ...newModule, mcqs: updated });
-  };
-
-  const handleMCQOptionChange = (mcqIdx, optIdx, value) => {
-    const updated = [...newModule.mcqs];
-    updated[mcqIdx].options[optIdx] = value;
-    setNewModule({ ...newModule, mcqs: updated });
-  };
-
-  const addMCQ = () => setNewModule({ ...newModule, mcqs: [...newModule.mcqs, { question: "", options: ["", ""], answer: "", lessonOrder: "" }] });
-  const removeMCQ = (idx) => {
-    const updated = [...newModule.mcqs];
-    updated.splice(idx, 1);
-    setNewModule({ ...newModule, mcqs: updated });
-  };
-  const addMCQOption = (mcqIdx) => {
-    const updated = [...newModule.mcqs];
-    updated[mcqIdx].options.push("");
-    setNewModule({ ...newModule, mcqs: updated });
-  };
-  const removeMCQOption = (mcqIdx, optIdx) => {
-    const updated = [...newModule.mcqs];
-    updated[mcqIdx].options.splice(optIdx, 1);
-    setNewModule({ ...newModule, mcqs: updated });
-  };
-
-  // ===== Submit =====
+  // Submission
   const handleAddModule = async () => {
     if (!newModule.title.trim() || !newModule.description.trim()) {
-      toast({
+      return toast({
         title: "Validation Error",
         description: "Title and Description are required",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
-      return;
     }
 
     setLoading(true);
 
-    const moduleToSend = {
-      ...newModule,
-      objectives: newModule.objectives.split(",").map(o => o.trim()).filter(Boolean),
-      tags: newModule.tags.map(t => t).filter(Boolean),
-      lessons: newModule.lessons.map(l => ({
-        ...l,
-        videoLinks: l.videoLinks.filter(v => v.trim() !== ""),
-        readingFiles: l.readingFiles.filter(r => r.trim() !== ""),
-      })),
-      tasks: newModule.tasks.map(t => ({
-        title: t.title.trim() || "Untitled Task",
-        description: t.description.trim() || t.title.trim() || "No description",
-        required: t.required ?? true,
-      })),
-      mcqs: newModule.mcqs.map(m => ({
-        question: m.question.trim(),
-        options: m.options.filter(o => o.trim() !== ""),
-        correctAnswer: m.answer.trim(),
-        lessonOrder: m.lessonOrder || null,
-      })),
-      status: "Draft",
-    };
+    try {
+      const lessonsWithContent = newModule.lessons.map((lesson, idx) => ({
+        ...lesson,
+        tasks: (newModule.tasks || []).filter(
+          (t) => Number(t.lessonOrder) === idx + 1,
+        ),
+        mcqBlocks: (newModule.mcqBlocks || []).filter(
+          (mb) => Number(mb.lessonOrder) === idx + 1,
+        ),
+      }));
+      const lessonsForBackend = lessonsWithContent;
 
-    const { success, message } = await createModule(moduleToSend);
+      const moduleToSend = {
+        title: newModule.title.trim(),
+        description: newModule.description.trim(),
+        objectives: (newModule.objectives || "")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean),
+        tags: (newModule.tags || "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        difficulty: newModule.difficulty,
+        category: newModule.category,
+        lessons: lessonsForBackend,
+        bannerUrl: (newModule.bannerUrl || "").trim(),
+      };
 
-    toast({
-      title: success ? "Success" : "Error",
-      description: message,
-      status: success ? "success" : "error",
-      duration: 3000,
-      isClosable: true,
-    });
+      const { success, message } = await createModule(moduleToSend);
 
-    setLoading(false);
-    if (success) navigate("/modules");
+      toast({
+        title: success ? "Success" : "Error",
+        description: message,
+        status: success ? "success" : "error",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      if (success) navigate("/tutor");
+    } catch (err) {
+      toast({
+        title: "Server Error",
+        description: "Failed to create module",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // ===== Render Steps =====
+  // Render Steps
   const renderStep = () => {
     switch (step) {
       case 1: // Module Details
         return (
           <VStack spacing={4} align="stretch">
-            <Input placeholder="Module Title" value={newModule.title} onChange={(e) => handleChange("title", e.target.value)} />
-            <Textarea placeholder="Module Description" value={newModule.description} onChange={(e) => handleChange("description", e.target.value)} />
-            <Textarea placeholder="Objectives (comma separated)" value={newModule.objectives} onChange={(e) => handleChange("objectives", e.target.value)} />
-            <Select value={newModule.difficulty} onChange={(e) => handleChange("difficulty", e.target.value)}>
+            <Input
+              placeholder="Module Title"
+              value={newModule.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+            />
+            <Textarea
+              placeholder="Module Description"
+              value={newModule.description}
+              onChange={(e) => handleChange("description", e.target.value)}
+            />
+            <Textarea
+              placeholder="Objectives (comma separated)"
+              value={newModule.objectives}
+              onChange={(e) => handleChange("objectives", e.target.value)}
+            />
+            <Select
+              value={newModule.difficulty}
+              onChange={(e) => handleChange("difficulty", e.target.value)}
+            >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
               <option value="advanced">Advanced</option>
             </Select>
-            <Input placeholder="Category" value={newModule.category} onChange={(e) => handleChange("category", e.target.value)} />
-            <Input placeholder="Tags (comma separated)" value={newModule.tags.join(",")} onChange={(e) => handleChange("tags", e.target.value.split(",").map(t => t))} />
+            <Input
+              placeholder="Category"
+              value={newModule.category}
+              onChange={(e) => handleChange("category", e.target.value)}
+            />
+            <Input
+              placeholder="Tags (comma separated)"
+              value={newModule.tags}
+              onChange={(e) => handleChange("tags", e.target.value)}
+            />
+            <Input
+              placeholder="Module Banner URL"
+              value={newModule.bannerUrl}
+              onChange={(e) => handleChange("bannerUrl", e.target.value)}
+            />
           </VStack>
         );
       case 2: // Lessons
@@ -223,74 +232,475 @@ const CreateModulePage = () => {
               <Box key={idx} borderWidth={1} p={4} rounded="md">
                 <HStack justify="space-between">
                   <Heading size="sm">Lesson #{idx + 1}</Heading>
-                  <IconButton icon={<DeleteIcon />} onClick={() => removeLesson(idx)} />
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    onClick={() => removeArrayItem("lessons", idx)}
+                  />
                 </HStack>
-                <Input placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(idx, "title", e.target.value)} />
-                <Textarea placeholder="Lesson Body" value={lesson.body} onChange={(e) => handleLessonChange(idx, "body", e.target.value)} />
+                <Input
+                  placeholder="Lesson Title"
+                  value={lesson.title}
+                  onChange={(e) =>
+                    handleArrayChange("lessons", idx, "title", e.target.value)
+                  }
+                />
+                <Textarea
+                  placeholder="Lesson Body"
+                  value={lesson.body}
+                  onChange={(e) =>
+                    handleArrayChange("lessons", idx, "body", e.target.value)
+                  }
+                />
 
-                {lesson.videoLinks.map((v, vIdx) => (
-                  <HStack key={vIdx}>
-                    <Input placeholder={`Video Link #${vIdx + 1}`} value={v} onChange={(e) => handleLessonArrayChange(idx, "videoLinks", vIdx, e.target.value)} />
-                    <IconButton icon={<DeleteIcon />} onClick={() => removeLessonArray(idx, "videoLinks", vIdx)} />
-                  </HStack>
+                {["videoLinks", "readingFiles"].map((field) => (
+                  <VStack key={field} spacing={2} align="stretch">
+                    {lesson[field].map((item, i) => (
+                      <HStack key={i}>
+                        <Input
+                          placeholder={`${field.slice(0, -1)} #${i + 1}`}
+                          value={item}
+                          onChange={(e) =>
+                            handleNestedArrayChange(
+                              "lessons",
+                              idx,
+                              field,
+                              i,
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <IconButton
+                          icon={<DeleteIcon />}
+                          onClick={() =>
+                            removeNestedArrayItem("lessons", idx, field, i)
+                          }
+                        />
+                      </HStack>
+                    ))}
+                    <Button
+                      leftIcon={<AddIcon />}
+                      onClick={() => addNestedArrayItem("lessons", idx, field)}
+                    >
+                      Add {field === "videoLinks" ? "Video" : "Reading File"}
+                    </Button>
+                  </VStack>
                 ))}
-                <Button leftIcon={<AddIcon />} onClick={() => addLessonArray(idx, "videoLinks")}>Add Video</Button>
-
-                {lesson.readingFiles.map((r, rIdx) => (
-                  <HStack key={rIdx}>
-                    <Input placeholder={`Reading File #${rIdx + 1}`} value={r} onChange={(e) => handleLessonArrayChange(idx, "readingFiles", rIdx, e.target.value)} />
-                    <IconButton icon={<DeleteIcon />} onClick={() => removeLessonArray(idx, "readingFiles", rIdx)} />
-                  </HStack>
-                ))}
-                <Button leftIcon={<AddIcon />} onClick={() => addLessonArray(idx, "readingFiles")}>Add Reading File</Button>
               </Box>
             ))}
-            <Button leftIcon={<AddIcon />} onClick={addLesson}>Add Lesson</Button>
+            <Button
+              leftIcon={<AddIcon />}
+              onClick={() =>
+                addArrayItem("lessons", {
+                  title: "",
+                  body: "",
+                  videoLinks: [""],
+                  readingFiles: [""],
+                  order: newModule.lessons.length + 1,
+                })
+              }
+            >
+              Add Lesson
+            </Button>
           </VStack>
         );
       case 3: // Tasks
         return (
           <VStack spacing={4} align="stretch">
             {newModule.tasks.map((task, idx) => (
-              <HStack key={idx}>
-                <Input placeholder="Task Title" value={task.title} onChange={(e) => handleTaskChange(idx, "title", e.target.value)} />
-                <Input placeholder="Task Description" value={task.description} onChange={(e) => handleTaskChange(idx, "description", e.target.value)} />
-                <IconButton icon={<DeleteIcon />} onClick={() => removeTask(idx)} />
-              </HStack>
+              <Box key={idx} borderWidth={1} p={4} rounded="md">
+                <HStack justify="space-between">
+                  <Heading size="sm">Task #{idx + 1}</Heading>
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    onClick={() => removeArrayItem("tasks", idx)}
+                  />
+                </HStack>
+                <VStack spacing={3} align="stretch">
+                  <Input
+                    placeholder="Task Title"
+                    value={task.title}
+                    onChange={(e) =>
+                      handleArrayChange("tasks", idx, "title", e.target.value)
+                    }
+                  />
+                  <Textarea
+                    placeholder="Task Description"
+                    value={task.description}
+                    onChange={(e) =>
+                      handleArrayChange(
+                        "tasks",
+                        idx,
+                        "description",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <Select
+                    value={task.lessonOrder}
+                    onChange={(e) =>
+                      handleArrayChange(
+                        "tasks",
+                        idx,
+                        "lessonOrder",
+                        Number(e.target.value),
+                      )
+                    }
+                  >
+                    {newModule.lessons.map((l, i) => (
+                      <option key={i} value={i + 1}>
+                        {l.title || `Lesson ${i + 1}`}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    value={task.required ? "true" : "false"}
+                    onChange={(e) =>
+                      handleArrayChange(
+                        "tasks",
+                        idx,
+                        "required",
+                        e.target.value === "true",
+                      )
+                    }
+                  >
+                    <option value="true">Required</option>
+                    <option value="false">Optional</option>
+                  </Select>
+                </VStack>
+              </Box>
             ))}
-            <Button leftIcon={<AddIcon />} onClick={addTask}>Add Task</Button>
+            <Button
+              leftIcon={<AddIcon />}
+              onClick={() =>
+                addArrayItem("tasks", {
+                  title: "",
+                  description: "",
+                  required: true,
+                  lessonOrder: 1,
+                })
+              }
+            >
+              Add Task
+            </Button>
           </VStack>
         );
+      // case 4: // MCQs
+      //   return (
+      //     <VStack spacing={4} align="stretch">
+      //       {newModule.mcqBlocks.map((block, idx) => (
+      //         <Box key={idx} borderWidth={1} p={4} rounded="md">
+      //           <HStack justify="space-between">
+      //             <Heading size="sm">
+      //               {block.title || `MCQ Block #${idx + 1}`}
+      //             </Heading>
+      //             <IconButton
+      //               icon={<DeleteIcon />}
+      //               onClick={() => removeArrayItem("mcqBlocks", idx)}
+      //             />
+      //           </HStack>
+      //           <Input
+      //             placeholder="Block Title"
+      //             value={block.title}
+      //             onChange={(e) =>
+      //               handleArrayChange("mcqBlocks", idx, "title", e.target.value)
+      //             }
+      //           />
+
+      //           {block.questions.map((q, qIdx) => (
+      //             <Box key={qIdx} mt={3} p={2} borderWidth={1} rounded="md">
+      //               <Input
+      //                 placeholder="Question"
+      //                 value={q.questionText}
+      //                 onChange={(e) =>
+      //                   handleNestedArrayChange(
+      //                     "mcqBlocks",
+      //                     idx,
+      //                     "questions",
+      //                     qIdx,
+      //                     {
+      //                       ...q,
+      //                       questionText: e.target.value,
+      //                     },
+      //                   )
+      //                 }
+      //               />
+      //               {q.options.map((opt, oIdx) => (
+      //                 <HStack key={oIdx} mt={2}>
+      //                   <Input
+      //                     placeholder={`Option #${oIdx + 1}`}
+      //                     value={opt}
+      //                     onChange={(e) => {
+      //                       const newOptions = [...q.options];
+      //                       newOptions[oIdx] = e.target.value;
+      //                       handleNestedArrayChange(
+      //                         "mcqBlocks",
+      //                         idx,
+      //                         "questions",
+      //                         qIdx,
+      //                         {
+      //                           ...q,
+      //                           options: newOptions,
+      //                         },
+      //                       );
+      //                     }}
+      //                   />
+      //                   <IconButton
+      //                     icon={<DeleteIcon />}
+      //                     onClick={() => {
+      //                       const newOptions = [...q.options];
+      //                       newOptions.splice(oIdx, 1);
+      //                       handleNestedArrayChange(
+      //                         "mcqBlocks",
+      //                         idx,
+      //                         "questions",
+      //                         qIdx,
+      //                         {
+      //                           ...q,
+      //                           options: newOptions,
+      //                         },
+      //                       );
+      //                     }}
+      //                   />
+      //                 </HStack>
+      //               ))}
+      //               <Button
+      //                 leftIcon={<AddIcon />}
+      //                 size="sm"
+      //                 mt={2}
+      //                 onClick={() => {
+      //                   const newOptions = [...q.options, ""];
+      //                   handleNestedArrayChange(
+      //                     "mcqBlocks",
+      //                     idx,
+      //                     "questions",
+      //                     qIdx,
+      //                     {
+      //                       ...q,
+      //                       options: newOptions,
+      //                     },
+      //                   );
+      //                 }}
+      //               >
+      //                 Add Option
+      //               </Button>
+      //               <Select
+      //                 mt={2}
+      //                 value={q.correctAnswerIndex}
+      //                 onChange={(e) =>
+      //                   handleNestedArrayChange(
+      //                     "mcqBlocks",
+      //                     idx,
+      //                     "questions",
+      //                     qIdx,
+      //                     {
+      //                       ...q,
+      //                       correctAnswerIndex: Number(e.target.value),
+      //                     },
+      //                   )
+      //                 }
+      //               >
+      //                 {q.options.map((_, i) => (
+      //                   <option key={i} value={i}>
+      //                     Option {i + 1}
+      //                   </option>
+      //                 ))}
+      //               </Select>
+      //             </Box>
+      //           ))}
+      //           <Button
+      //             leftIcon={<AddIcon />}
+      //             mt={3}
+      //             onClick={() => addMcqQuestion(idx)}
+      //           >
+      //             Add Question
+      //           </Button>
+      //         </Box>
+      //       ))}
+      //       <Button
+      //         leftIcon={<AddIcon />}
+      //         onClick={() =>
+      //           addArrayItem("mcqBlocks", {
+      //             lessonOrder: 1,
+      //             title: `MCQ Block ${newModule.mcqBlocks.length + 1}`,
+      //             questions: [
+      //               {
+      //                 questionText: "",
+      //                 options: ["", ""],
+      //                 correctAnswerIndex: 0,
+      //               },
+      //             ],
+      //           })
+      //         }
+      //       >
+      //         Add MCQ Block
+      //       </Button>
+      //     </VStack>
+      //   );
+
       case 4: // MCQs
         return (
           <VStack spacing={4} align="stretch">
-            {newModule.mcqs.map((mcq, idx) => (
+            {newModule.mcqBlocks.map((block, idx) => (
               <Box key={idx} borderWidth={1} p={4} rounded="md">
                 <HStack justify="space-between">
-                  <Heading size="sm">MCQ #{idx + 1}</Heading>
-                  <IconButton icon={<DeleteIcon />} onClick={() => removeMCQ(idx)} />
+                  <Heading size="sm">
+                    {block.title || `MCQ Block #${idx + 1}`}
+                  </Heading>
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    onClick={() => removeArrayItem("mcqBlocks", idx)}
+                  />
                 </HStack>
-                <Input placeholder="Question" value={mcq.question} onChange={(e) => handleMCQChange(idx, "question", e.target.value)} />
-                {mcq.options.map((opt, optIdx) => (
-                  <HStack key={optIdx}>
-                    <Input placeholder={`Option #${optIdx + 1}`} value={opt} onChange={(e) => handleMCQOptionChange(idx, optIdx, e.target.value)} />
-                    <IconButton icon={<DeleteIcon />} onClick={() => removeMCQOption(idx, optIdx)} />
-                  </HStack>
+                <Input
+                  placeholder="Block Title"
+                  value={block.title}
+                  onChange={(e) =>
+                    handleArrayChange("mcqBlocks", idx, "title", e.target.value)
+                  }
+                />
+
+                {/* Assign block to a lesson */}
+                <Select
+                  mt={2}
+                  value={block.lessonOrder}
+                  onChange={(e) =>
+                    handleArrayChange(
+                      "mcqBlocks",
+                      idx,
+                      "lessonOrder",
+                      Number(e.target.value),
+                    )
+                  }
+                >
+                  {newModule.lessons.map((l, i) => (
+                    <option key={i} value={i + 1}>
+                      {l.title || `Lesson ${i + 1}`}
+                    </option>
+                  ))}
+                </Select>
+
+                {block.questions.map((q, qIdx) => (
+                  <Box key={qIdx} mt={3} p={2} borderWidth={1} rounded="md">
+                    <Input
+                      placeholder="Question"
+                      value={q.questionText}
+                      onChange={(e) =>
+                        handleNestedArrayChange(
+                          "mcqBlocks",
+                          idx,
+                          "questions",
+                          qIdx,
+                          { ...q, questionText: e.target.value },
+                        )
+                      }
+                    />
+                    {q.options.map((opt, oIdx) => (
+                      <HStack key={oIdx} mt={2}>
+                        <Input
+                          placeholder={`Option #${oIdx + 1}`}
+                          value={opt}
+                          onChange={(e) => {
+                            const newOptions = [...q.options];
+                            newOptions[oIdx] = e.target.value;
+                            handleNestedArrayChange(
+                              "mcqBlocks",
+                              idx,
+                              "questions",
+                              qIdx,
+                              { ...q, options: newOptions },
+                            );
+                          }}
+                        />
+                        <IconButton
+                          icon={<DeleteIcon />}
+                          onClick={() => {
+                            const newOptions = [...q.options];
+                            newOptions.splice(oIdx, 1);
+                            handleNestedArrayChange(
+                              "mcqBlocks",
+                              idx,
+                              "questions",
+                              qIdx,
+                              { ...q, options: newOptions },
+                            );
+                          }}
+                        />
+                      </HStack>
+                    ))}
+                    <Button
+                      leftIcon={<AddIcon />}
+                      size="sm"
+                      mt={2}
+                      onClick={() => {
+                        const newOptions = [...q.options, ""];
+                        handleNestedArrayChange(
+                          "mcqBlocks",
+                          idx,
+                          "questions",
+                          qIdx,
+                          {
+                            ...q,
+                            options: newOptions,
+                          },
+                        );
+                      }}
+                    >
+                      Add Option
+                    </Button>
+                    <Select
+                      mt={2}
+                      value={q.correctAnswerIndex}
+                      onChange={(e) =>
+                        handleNestedArrayChange(
+                          "mcqBlocks",
+                          idx,
+                          "questions",
+                          qIdx,
+                          {
+                            ...q,
+                            correctAnswerIndex: Number(e.target.value),
+                          },
+                        )
+                      }
+                    >
+                      {q.options.map((_, i) => (
+                        <option key={i} value={i}>
+                          Option {i + 1}
+                        </option>
+                      ))}
+                    </Select>
+                  </Box>
                 ))}
-                <Button leftIcon={<AddIcon />} onClick={() => addMCQOption(idx)}>Add Option</Button>
-
-                <Select placeholder="Select Correct Answer" value={mcq.answer} onChange={(e) => handleMCQChange(idx, "answer", e.target.value)}>
-                  {mcq.options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </Select>
-
-                <Select placeholder="Assign to lesson" value={mcq.lessonOrder} onChange={(e) => handleMCQChange(idx, "lessonOrder", e.target.value)}>
-                  {newModule.lessons.map((l) => <option key={l.order} value={l.order}>{l.title}</option>)}
-                </Select>
+                <Button
+                  leftIcon={<AddIcon />}
+                  mt={3}
+                  onClick={() => addMcqQuestion(idx)}
+                >
+                  Add Question
+                </Button>
               </Box>
             ))}
-            <Button leftIcon={<AddIcon />} onClick={addMCQ}>Add MCQ</Button>
+            <Button
+              leftIcon={<AddIcon />}
+              onClick={() =>
+                addArrayItem("mcqBlocks", {
+                  lessonOrder: 1, // default to first lesson
+                  title: `MCQ Block ${newModule.mcqBlocks.length + 1}`,
+                  questions: [
+                    {
+                      questionText: "",
+                      options: ["", ""],
+                      correctAnswerIndex: 0,
+                    },
+                  ],
+                })
+              }
+            >
+              Add MCQ Block
+            </Button>
           </VStack>
         );
+
       case 5: // Review
         return (
           <VStack spacing={4} align="stretch">
@@ -300,20 +710,7 @@ const CreateModulePage = () => {
             <Text fontWeight="bold">Objectives: {newModule.objectives}</Text>
             <Text fontWeight="bold">Difficulty: {newModule.difficulty}</Text>
             <Text fontWeight="bold">Category: {newModule.category}</Text>
-            <Text fontWeight="bold">Tags: {newModule.tags.join(", ")}</Text>
-
-            {newModule.lessons.map((l) => (
-              <Box key={l.order} borderWidth={1} p={2} rounded="md">
-                <Text fontWeight="bold">Lesson: {l.title}</Text>
-                <Text>{l.body}</Text>
-                <Text>Videos: {l.videoLinks.join(", ")}</Text>
-                <Text>Readings: {l.readingFiles.join(", ")}</Text>
-              </Box>
-            ))}
-
-            {newModule.tasks.map((t, i) => <Text key={i}>Task: {t.title} | {t.description}</Text>)}
-
-            {newModule.mcqs.map((q, i) => <Text key={i}>MCQ: {q.question} | Answer: {q.answer} | Lesson: {q.lessonOrder}</Text>)}
+            <Text fontWeight="bold">Tags: {newModule.tags}</Text>
           </VStack>
         );
       default:
@@ -324,13 +721,35 @@ const CreateModulePage = () => {
   return (
     <Container maxW="container.md" py={6}>
       <VStack spacing={6}>
-        <Heading as="h1" size="xl" textAlign="center">Create New Module</Heading>
-        <Box w="full" bg={useColorModeValue("white", "gray.800")} p={6} rounded="lg" shadow="md">
+        <Heading as="h1" size="xl" textAlign="center">
+          Create New Module
+        </Heading>
+        <Box
+          w="full"
+          bg={useColorModeValue("white", "gray.800")}
+          p={6}
+          rounded="lg"
+          shadow="md"
+        >
           {renderStep()}
           <HStack justify="space-between" mt={4}>
-            {step > 1 && <Button onClick={prevStep}>Back</Button>}
-            {step < 5 && <Button colorScheme="blue" onClick={nextStep}>Next</Button>}
-            {step === 5 && <Button colorScheme="green" onClick={handleAddModule} isLoading={loading}>Create Module</Button>}
+            {step > 1 && (
+              <Button onClick={() => setStep(step - 1)}>Back</Button>
+            )}
+            {step < 5 && (
+              <Button colorScheme="blue" onClick={() => setStep(step + 1)}>
+                Next
+              </Button>
+            )}
+            {step === 5 && (
+              <Button
+                colorScheme="blue.900"
+                onClick={handleAddModule}
+                isLoading={loading}
+              >
+                Create Module
+              </Button>
+            )}
           </HStack>
         </Box>
       </VStack>

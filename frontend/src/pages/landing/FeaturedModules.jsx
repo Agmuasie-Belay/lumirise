@@ -19,7 +19,7 @@ export default function FeaturedModules({ modules }) {
           fontSize={{ base: "2xl", md: "4xl" }}
           fontWeight="extrabold"
         >
-          Featured Modules
+          Featured Courses
         </Heading>
 
         <SimpleGrid

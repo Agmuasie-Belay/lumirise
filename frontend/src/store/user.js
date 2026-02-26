@@ -8,7 +8,7 @@ export const useUserStore = create((set) => ({
   setUsers: (users) => set({ users }),
 
   fetchUsers: async () => {
-    const res = await fetch(`${API_URL}/api/users`);
+    const res = await fetch(`${API_URL}/api/profile`);
     const data = await res.json();
     set({ users: data.data });
   },

@@ -1,9 +1,7 @@
 import mongoose from "mongoose";
 import validator from "validator";
 
-// ==========================
-// 🧠 Sub-schema: Tutor Assessments
-// ==========================
+// Sub-schema: Tutor Assessments
 const tutorAssessmentSchema = new mongoose.Schema({
   technicalSkills: [
     {
@@ -27,17 +25,13 @@ const tutorAssessmentSchema = new mongoose.Schema({
   assessedAt: { type: Date, default: Date.now },
 });
 
-// ==========================
-// 📂 Sub-schema: Uploaded Documents
-// ==========================
+// Sub-schema: Uploaded Documents
 const documentSchema = new mongoose.Schema({
   fileUrl: { type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
 });
 
-// ==========================
-// 📩 Sub-schema: Notifications
-// ==========================
+// Sub-schema: Notifications
 const notificationSubSchema = new mongoose.Schema(
   {
     title: { type: String, trim: true },
@@ -48,22 +42,23 @@ const notificationSubSchema = new mongoose.Schema(
       enum: ["info", "alert", "reminder", "feedback", "system"],
       default: "info",
     },
-    relatedEntity: { type: mongoose.Schema.Types.ObjectId, refPath: 'relatedEntityType' },
-    relatedEntityType: { type: String, enum: ['Module', 'MentorshipSession', 'User'] },
+    relatedEntity: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "relatedEntityType",
+    },
+    relatedEntityType: {
+      type: String,
+      enum: ["Module", "MentorshipSession", "User"],
+    },
     read: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
-// ==========================
-// 1. 👤 Main User Schema
-// ==========================
+// Main User Schema
 const userSchema = new mongoose.Schema(
   {
-    // ------------------
-    // Basic Info
-    // ------------------
     name: { type: String, required: true, trim: true },
     email: {
       type: String,
@@ -92,24 +87,20 @@ const userSchema = new mongoose.Schema(
     },
     role: { type: String, enum: ["student", "tutor", "admin"], required: true },
 
-    // ------------------
-    // Verification
-    // ------------------
     emailVerification: {
       code: { type: String },
       expiresAt: { type: Date },
       verified: { type: Boolean, default: false },
     },
     phoneVerification: {
-      code: { type: String },
+      codeHash: { type: String }, // Hashed OTP
       expiresAt: { type: Date },
       verified: { type: Boolean, default: false },
+      resendCount: { type: Number, default: 0 }, // for limiting OTP resends
+      lastSentAt: { type: Date }, // timestamp of last OTP sent
     },
     canUploadDocuments: { type: Boolean, default: false },
 
-    // ------------------
-    // Student-specific
-    // ------------------
     visionStatement: {
       type: String,
       minlength: 20,
@@ -121,7 +112,8 @@ const userSchema = new mongoose.Schema(
           }
           return true;
         },
-        message: "Vision statement must be at least 20 characters for students.",
+        message:
+          "Vision statement must be at least 20 characters for students.",
       },
     },
     studentDocuments: {
@@ -132,9 +124,6 @@ const userSchema = new mongoose.Schema(
       submittedAt: { type: Date },
     },
 
-    // ------------------
-    // Tutor-specific
-    // ------------------
     coursesRegistered: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Module" },
     ],
@@ -146,9 +135,6 @@ const userSchema = new mongoose.Schema(
       submittedAt: { type: Date },
     },
 
-    // ------------------
-    // Common
-    // ------------------
     profilePicture: { type: String, default: "" },
     bio: { type: String, trim: true, maxlength: 500 },
     skills: [{ type: String }],
@@ -163,17 +149,11 @@ const userSchema = new mongoose.Schema(
       endTime: String,
     },
     defaultHourlyRate: { type: Number, default: 0 },
-    // ------------------
-    // Notifications
-    // ------------------
     notifications: [notificationSubSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-// ------------------------------
-// PRE-SAVE HOOK & TRANSFORMATION
-// ------------------------------
 userSchema.pre("save", function (next) {
   if (this.isModified("notifications") && Array.isArray(this.notifications)) {
     const uniqueMap = new Map();
@@ -195,7 +175,4 @@ userSchema.set("toJSON", {
   },
 });
 
-// ==========================
-// ✅ Model Export
-// ==========================
 export default mongoose.model("User", userSchema);

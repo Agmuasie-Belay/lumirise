@@ -1,64 +1,89 @@
 import {
-  Input,
-  InputGroup,
-  InputRightElement,
-  IconButton,
-  Container,
-  Heading,
   Box,
   Button,
-  VStack,
-  useColorModeValue,
-  useToast,
-  HStack,
-  Select,
-  Textarea,
+  Flex,
   FormControl,
   FormLabel,
-  FormErrorMessage,
+  Heading,
+  Input,
+  Select,
   Text,
-  Spinner,
+  Textarea,
+  VStack,
   Progress,
+  useColorModeValue,
+  Spinner,
+  useToast,
+  InputGroup,
+  InputRightElement,
+  IconButton
 } from "@chakra-ui/react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore } from "../../store/auth";
 
+const MotionBox = motion(Box);
+
 const SignupPage = () => {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { signup } = useAuthStore();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
     role: "student",
     visionStatement: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({ label: "", color: "gray" });
-  const [showPassword, setShowPassword] = useState(false);
 
-  const toast = useToast();
-  const navigate = useNavigate();
-  const { signup } = useAuthStore();
+  const [passwordStrength, setPasswordStrength] = useState({
+    label: "",
+    color: "gray",
+    score: 0,
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const MIN_VISION = 50;
   const MAX_VISION = 200;
 
-  // Email, Phone, Vision validation
+  // ================= VALIDATIONS =================
+
   const isEmailValid = /\S+@\S+\.\S+/.test(formData.email);
   const isPhoneValid = formData.phone.trim().length > 0;
+  const isPasswordValid = formData.password.length >= 8;
+
+  const isConfirmPasswordValid =
+    formData.confirmPassword.length > 0 &&
+    formData.confirmPassword === formData.password;
+
   const isVisionValid =
     formData.role === "student"
       ? formData.visionStatement.trim().length >= MIN_VISION &&
         formData.visionStatement.trim().length <= MAX_VISION
       : true;
 
-  // Password Validation
-  const isPasswordValid = formData.password.length >= 8;
+  const isFormValid =
+    formData.name.trim() &&
+    isEmailValid &&
+    isPhoneValid &&
+    isPasswordValid &&
+    isConfirmPasswordValid &&
+    isVisionValid;
 
-  const checkPasswordStrength = (password) => {
-    if (!password) return { label: "", color: "gray", score: 0 };
+  // ================= PASSWORD STRENGTH =================
+
+  const evaluatePassword = (password) => {
+    if (!password) {
+      setPasswordStrength({ label: "", color: "gray", score: 0 });
+      return;
+    }
 
     let score = 0;
     if (password.length >= 8) score++;
@@ -66,10 +91,22 @@ const SignupPage = () => {
     if (/[0-9]/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
-    if (score <= 1) return { label: "Weak", color: "red.400", score };
-    if (score === 2 || score === 3) return { label: "Medium", color: "yellow.400", score };
-    return { label: "Strong", color: "green.400", score };
+    let label = "Weak";
+    let color = "red.400";
+
+    if (score === 2 || score === 3) {
+      label = "Medium";
+      color = "yellow.400";
+    }
+    if (score === 4) {
+      label = "Strong";
+      color = "green.400";
+    }
+
+    setPasswordStrength({ label, color, score });
   };
+
+  // ================= HANDLERS =================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -79,264 +116,325 @@ const SignupPage = () => {
       [name]: value,
     }));
 
-    if (name === "password") {
-      setPasswordStrength(checkPasswordStrength(value));
+    if (name === "password") evaluatePassword(value);
+  };
+
+  const handleSignup = async () => {
+    if (!isFormValid) {
+      toast({
+        title: "Validation Error",
+        description: "Please ensure all fields are valid and passwords match.",
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { success, message, fallbackVerificationLink } =
+        await signup(formData);
+
+      if (success) {
+        toast({
+          title: "Account created!",
+          description: message,
+          status: "success",
+          duration: 4000,
+          isClosable: true,
+        });
+
+        if (fallbackVerificationLink) {
+          toast({
+            title: "Email delivery failed",
+            description: (
+              <span>
+                You can manually verify your account here:{" "}
+                <a
+                  href={fallbackVerificationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#3182CE",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Verify Email
+                </a>
+              </span>
+            ),
+            status: "warning",
+            duration: 8000,
+            isClosable: true,
+          });
+        }
+
+        setTimeout(() => navigate("/login"), 500);
+      } else {
+        throw new Error(message);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
- const handleSignup = async () => {
-  if (!isEmailValid || !isPasswordValid || !isPhoneValid || !isVisionValid) {
-    toast({
-      title: "Validation Error",
-      description: `Please fill all fields correctly (valid email, phone required, password ≥8 chars${
-        formData.role === "student" ? `, vision ${MIN_VISION}-${MAX_VISION} chars` : ""
-      }).`,
-      status: "warning",
-      duration: 4000,
-      isClosable: true,
-    });
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const { success, message, fallbackVerificationLink } = await signup(formData);
-
-    if (success) {
-      toast({
-        title: "Account created!",
-        description: message,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      if (fallbackVerificationLink) {
-        toast({
-          title: "Email delivery failed",
-          description: (
-            <span>
-              We couldn't send the verification email after multiple attempts. You can manually verify your account here:{" "}
-              <a
-                href={fallbackVerificationLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "#3182CE", textDecoration: "underline" }}
-              >
-                Verify Email
-              </a>
-            </span>
-          ),
-          status: "warning",
-          duration: 8000,
-          isClosable: true,
-        });
-      }
-
-      // Optional: Wait a bit for fallback toast to be read
-      setTimeout(() => navigate("/login"), 500);
-    } else {
-      throw new Error(message);
-    }
-  } catch (err) {
-    toast({
-      title: "Error",
-      description: err.message,
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
+  const bgRight = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
 
   return (
-    <Container maxW="container.sm">
-      <VStack spacing={8}>
-        <Heading as="h1" size="xl" textAlign="center" mt={6}>
-          Create New Account
+    <Flex h="100vh" overflow="hidden">
+      {/* LEFT PANEL */}
+      <Flex
+        position={{ base: "relative", md: "fixed" }}
+        left="0"
+        top="0"
+        h="100vh"
+        w={{ base: "100%", md: "50%" }}
+        bgGradient="linear(to-r, blue.500, cyan.400)"
+        color="white"
+        display={{ base: "none", md: "flex" }}
+        align="center"
+        justify="center"
+        px={10}
+        py={8}
+        direction="column"
+        textAlign="center"
+      >
+        <Heading size="xl" mb={4}>
+          Learn. Grow. Rise.
         </Heading>
-        <Text fontSize="md" color="gray.500" textAlign="center" mb={4}>
-          Join us and start your learning journey.
+        <Text fontSize="md" opacity={0.9} maxW="sm">
+          Lumirise empowers students and tutors to build meaningful learning
+          experiences and unlock real potential.
         </Text>
+      </Flex>
 
-        <Box
-          w="80%"
-          bg={useColorModeValue("white", "gray.800")}
-          p={6}
-          rounded="lg"
-          shadow="md"
+      {/* RIGHT PANEL */}
+      <Flex
+        ml={{ base: 0, md: "50%" }}
+        w={{ base: "100%", md: "50%" }}
+        h="100vh"
+        overflowY="auto"
+        bg={bgRight}
+        align="flex-start"
+        justify="center"
+        px={6}
+        py={8}
+      >
+        <MotionBox
+          w="full"
+          maxW="sm"
+          bg={cardBg}
+          bgGradient="linear(to-r, gray.100, white)"
+          color="cyan.900"
+          p={{ base: 5, md: 6 }}
+          rounded="2xl"
+          shadow="xl"
+          borderWidth="1px"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          <VStack spacing={5}>
-            {/* Name */}
-            <FormControl isRequired>
-              <FormLabel>Full Name</FormLabel>
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter your full name"
-                borderRadius="md"
-                autoComplete="name"
-              />
-            </FormControl>
+          <VStack spacing={4} align="stretch">
+            <Box textAlign="center">
+              <Heading size="lg" fontWeight="bold">
+                Create your account
+              </Heading>
+              <Text color="gray.500" fontSize="sm" mt={1}>
+                Start your Lumirise journey today.
+              </Text>
+            </Box>
 
-            {/* Email */}
-            <FormControl isInvalid={!isEmailValid && formData.email} isRequired>
-              <FormLabel>Email</FormLabel>
-              <Input
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="example@mail.com"
-                borderRadius="md"
-                autoComplete="email"
-              />
-              <FormErrorMessage>Enter a valid email address.</FormErrorMessage>
-            </FormControl>
-
-            {/* Phone */}
-            <FormControl isInvalid={!isPhoneValid && formData.phone} isRequired>
-              <FormLabel>Phone Number</FormLabel>
-              <Input
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Enter your phone number"
-                borderRadius="md"
-                autoComplete="tel"
-              />
-              <FormErrorMessage>Phone number is required.</FormErrorMessage>
-            </FormControl>
-
-            {/* Password with strength + toggle */}
-            <FormControl isInvalid={!isPasswordValid && formData.password} isRequired>
-              <FormLabel>Password</FormLabel>
-              <InputGroup>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Full Name</FormLabel>
                 <Input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
-                  placeholder="At least 8 characters"
-                  borderRadius="md"
-                  autoComplete="new-password"
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
                 />
-                <InputRightElement>
-                  <IconButton
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowPassword(!showPassword)}
-                  />
-                </InputRightElement>
-              </InputGroup>
-
-              {formData.password && (
-                <>
-                  <Progress
-                    value={passwordStrength.score * 25}
-                    size="xs"
-                    mt={2}
-                    colorScheme={
-                      passwordStrength.label === "Weak"
-                        ? "red"
-                        : passwordStrength.label === "Medium"
-                        ? "yellow"
-                        : "green"
-                    }
-                    borderRadius="md"
-                  />
-                  <Text mt={1} fontSize="sm" color={passwordStrength.color}>
-                    Strength: {passwordStrength.label}
-                  </Text>
-                </>
-              )}
-              <FormErrorMessage>Password must be at least 8 characters.</FormErrorMessage>
-            </FormControl>
-
-            {/* Role */}
-            <FormControl isRequired>
-              <FormLabel>Role</FormLabel>
-              <Select name="role" value={formData.role} onChange={handleChange}>
-                <option value="student">Student</option>
-                <option value="tutor">Tutor</option>
-              </Select>
-            </FormControl>
-
-            {/* Vision Statement */}
-            {formData.role === "student" && (
-              <FormControl isInvalid={!isVisionValid && formData.visionStatement}>
-                <FormLabel>Vision Statement</FormLabel>
-                <Textarea
-                  name="visionStatement"
-                  value={formData.visionStatement}
-                  onChange={handleChange}
-                  placeholder={`Briefly share your vision (min ${MIN_VISION} characters)`}
-                  borderRadius="md"
-                  maxLength={MAX_VISION}
-                />
-                <Text
-                  fontSize="sm"
-                  color={
-                    formData.visionStatement.length < MIN_VISION ||
-                    formData.visionStatement.length > MAX_VISION
-                      ? "red.500"
-                      : "gray.500"
-                  }
-                  mt={1}
-                  alignSelf="flex-end"
-                >
-                  {formData.visionStatement.length < MIN_VISION
-                    ? `${MIN_VISION - formData.visionStatement.length} characters left to minimum`
-                    : `${formData.visionStatement.length}/${MAX_VISION} characters`}
-                </Text>
-                <FormErrorMessage>
-                  Vision statement must be between {MIN_VISION} and {MAX_VISION} characters.
-                </FormErrorMessage>
               </FormControl>
-            )}
 
-            {/* Buttons */}
-            <HStack
-              w="full"
-              spacing={4}
-              flexDir={{ base: "column", md: "row" }}
-              mt={2}
-            >
+              <FormControl
+                isRequired
+                isInvalid={!isEmailValid && formData.email}
+              >
+                <FormLabel fontSize="sm">Email</FormLabel>
+                <Input
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
+                />
+              </FormControl>
+
+              <FormControl
+                isRequired
+                isInvalid={!isPhoneValid && formData.phone}
+              >
+                <FormLabel fontSize="sm">Phone Number</FormLabel>
+                <Input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
+                />
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Register As</FormLabel>
+                <Select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
+                >
+                  <option value="student">Student</option>
+                  <option value="tutor" disabled>Tutor</option>
+                </Select>
+              </FormControl>
+
+              {formData.role === "student" && (
+                <FormControl
+                  isInvalid={!isVisionValid && formData.visionStatement}
+                >
+                  <FormLabel fontSize="sm">Vision Statement</FormLabel>
+                  <Textarea
+                    name="visionStatement"
+                    value={formData.visionStatement}
+                    onChange={handleChange}
+                    resize="vertical"
+                    minH="100px"
+                    focusBorderColor="blue.400"
+                    borderRadius="lg"
+                  />
+                  <Text
+                    fontSize="xs"
+                    color={!isVisionValid ? "red.500" : "gray.500"}
+                    mt={1}
+                  >
+                    {formData.visionStatement.length < MIN_VISION
+                      ? `${MIN_VISION - formData.visionStatement.length} characters left to minimum`
+                      : `${formData.visionStatement.length}/${MAX_VISION} characters`}
+                  </Text>
+                </FormControl>
+              )}
+
+              {/* PASSWORD */}
+              <FormControl
+                isRequired
+                isInvalid={!isPasswordValid && formData.password}
+              >
+                <FormLabel fontSize="sm">Password</FormLabel>
+                <InputGroup>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    focusBorderColor="blue.400"
+                    borderRadius="lg"
+                  />
+                  <InputRightElement h="full">
+                    <IconButton
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPassword(!showPassword)}
+                    />
+                  </InputRightElement>
+                </InputGroup>
+
+                {formData.password && (
+                  <>
+                    <Progress
+                      value={passwordStrength.score * 25}
+                      size="xs"
+                      rounded="full"
+                      mt={2}
+                      colorScheme={passwordStrength.color.split(".")[0]}
+                    />
+                    <Text fontSize="xs" mt={1}>
+                      Password strength:{" "}
+                      <strong>{passwordStrength.label}</strong>
+                    </Text>
+                  </>
+                )}
+              </FormControl>
+
+              {/* CONFIRM PASSWORD */}
+              <FormControl
+                isRequired
+                isInvalid={formData.confirmPassword && !isConfirmPasswordValid}
+              >
+                <FormLabel fontSize="sm">Confirm Password</FormLabel>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  focusBorderColor="blue.400"
+                  borderRadius="lg"
+                />
+                {formData.confirmPassword && !isConfirmPasswordValid && (
+                  <Text fontSize="xs" color="red.500" mt={1}>
+                    Passwords do not match
+                  </Text>
+                )}
+              </FormControl>
+
               <Button
                 colorScheme="blue"
+                size="md"
                 w="full"
+                fontWeight="semibold"
+                rounded="xl"
+                shadow="md"
+                _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
                 onClick={handleSignup}
-                isLoading={isLoading}
+                isLoading={loading}
                 loadingText="Signing up..."
                 spinner={<Spinner size="sm" />}
-                borderRadius="xl"
+                isDisabled={!isFormValid || loading}
               >
                 Sign Up
               </Button>
 
-              <Link to="/login" style={{ width: "100%" }}>
-                <Button
-                  variant="outline"
-                  colorScheme="gray"
-                  w="full"
-                  borderRadius="xl"
+              <Text textAlign="center" fontSize="xs">
+                Already have an account?{" "}
+                <Text
+                  as="span"
+                  color="blue.500"
+                  fontWeight="medium"
+                  cursor="pointer"
+                  onClick={() => navigate("/login")}
                 >
-                  Login
-                </Button>
-              </Link>
-            </HStack>
+                  Log in
+                </Text>
+              </Text>
+            </VStack>
           </VStack>
-        </Box>
-      </VStack>
-    </Container>
+        </MotionBox>
+      </Flex>
+    </Flex>
   );
 };
 

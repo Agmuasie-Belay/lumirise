@@ -14,9 +14,11 @@ import ViewModuleDetails from "./components/Module/ViewModuleDetails";
 // Role-specific dashboards
 import StudentHome from "./pages/student/StudentHome";
 import TutorHome from "./pages/tutor/TutorHome";
-import DailyJournal from "./pages/student/DailyJournal";
 import Layout from "./components/layout/Layout";
 import AdminHome from "./pages/admin/AdminHome";
+import Journal from "./pages/student/Journal";
+import ModulePage from "./components/Module/ModulePage";
+import About from "./pages/landing/About";
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -35,13 +37,12 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/journal" element={<DailyJournal />} />
-
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/about" element={<About />} />
         {/* Module management */}
         <Route path="/create-module" element={<CreatePage />} />
         <Route path="/edit-module/:id" element={<EditModule />} />
-
-        <Route path="/module/:id" element={<ViewModuleDetails />} />
+        
 
         {/* Student routes */}
         <Route
