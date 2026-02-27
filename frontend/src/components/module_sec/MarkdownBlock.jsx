@@ -26,7 +26,7 @@ const MarkdownBlock = ({ data }) => {
         components={{
           h1: ({ node, ...props }) => (
             <>
-              <Heading as="h1" size="xl" color="darkslateblue" my={4} {...props} />
+              <Heading as="h1" size="xl" color="blue.600" my={4} {...props} />
               <Divider borderColor="blue.400" mb={4} />
             </>
           ),

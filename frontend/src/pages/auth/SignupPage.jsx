@@ -199,7 +199,7 @@ const SignupPage = () => {
         top="0"
         h="100vh"
         w={{ base: "100%", md: "50%" }}
-        bgGradient="linear(to-r, blue.500, cyan.400)"
+        bgGradient="linear(to-r, blue.800, blue.400)"
         color="white"
         display={{ base: "none", md: "flex" }}
         align="center"
@@ -213,7 +213,7 @@ const SignupPage = () => {
           Learn. Grow. Rise.
         </Heading>
         <Text fontSize="md" opacity={0.9} maxW="sm">
-          Lumirise empowers students and tutors to build meaningful learning
+          Lumirise empowers learners to build meaningful learning
           experiences and unlock real potential.
         </Text>
       </Flex>

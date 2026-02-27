@@ -79,9 +79,10 @@ const LessonsSidebar = forwardRef(
     return (
       <MotionBox
         ref={ref}
-        position="sticky"
-        h="full"
-        minH="0"
+        position="fixed"
+top="16"
+bottom="0"
+overflowY="auto"
         display="flex"
         flexDirection="column"
         bg={bg}
@@ -90,6 +91,13 @@ const LessonsSidebar = forwardRef(
         variants={sidebarVariants}
         animate={collapsed ? "collapsed" : "open"}
         transition={{ type: "spring", stiffness: 220, damping: 20 }}
+        sx={{
+  scrollbarWidth: "none",       // Firefox
+  msOverflowStyle: "none",      // IE/Edge legacy
+  "&::-webkit-scrollbar": {
+    display: "none",            // Chrome, Safari
+  },
+}}
       >
         {/* HEADER */}
         <Box
@@ -124,7 +132,7 @@ const LessonsSidebar = forwardRef(
             </Box>
           </Flex>
         </Box>
-                <Divider/>
+        <Divider />
         <Box flex="1" minH={0} px={collapsed ? 2 : 4} py={4}>
           <VStack align="stretch" spacing={2}>
             {lessons.map((lesson, lIndex) => {

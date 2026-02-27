@@ -22,6 +22,7 @@ import { useEnrollmentStore } from "../../store/moduleEnrollment";
 import LessonSidebar from "../module_sec/LessonsSidebar";
 import CanvasArea from "../module_sec/CanvasArea";
 import { ArrowLeftCircle, ArrowRightCircle, Menu } from "lucide-react";
+import Header from "../layout/Header";
 
 const MotionFlex = motion(Flex);
 
@@ -31,7 +32,12 @@ const ModulePage = () => {
 
   const { currentModule, fetchModuleById } = useModuleStore();
   const { recordActivity, fetchEnrollment } = useEnrollmentStore();
-
+  const {
+    isOpen: lessonSidebarOpen,
+    onOpen,
+    onClose,
+    onToggle,
+  } = useDisclosure();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -39,7 +45,6 @@ const ModulePage = () => {
   const [enrollment, setEnrollment] = useState(null);
   const [lessonSidebarCollapsed, setLessonSidebarCollapsed] = useState(false);
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const sidebarWidth = lessonSidebarCollapsed ? "5rem" : "280px";
@@ -203,9 +208,38 @@ const ModulePage = () => {
   };
 
   return (
-    <Flex flex="1" minH="0" direction="column" bg={pageBg} overflow="auto">
+    <Flex
+      flex="1"
+      minH="0"
+      gap={4}
+      direction="row"
+      bg={pageBg}
+      sx={{
+        scrollbarWidth: "none", // Firefox
+        msOverflowStyle: "none", // IE/Edge legacy
+        "&::-webkit-scrollbar": {
+          display: "none", // Chrome, Safari
+        },
+      }}
+    >
       {enrollment && (
-        <Flex flex="1" minH="0" gap={4}>
+        <Flex
+          flex="1"
+          minH="0"
+          gap={4}
+          sx={{
+            scrollbarWidth: "none", // Firefox
+            msOverflowStyle: "none", // IE/Edge legacy
+            "&::-webkit-scrollbar": {
+              display: "none", // Chrome, Safari
+            },
+          }}
+        >
+          {/* <Header lessonSidebarOpen={lessonSidebarOpen} lessonOpen={lessonOpen} /> */}
+          <Header
+            variant="module"
+            lessons={{ isOpen: lessonSidebarOpen, onToggle }}
+          />
           {/* Main Content */}
           <Box
             flex="1"
@@ -217,7 +251,7 @@ const ModulePage = () => {
             shadow="sm"
             position="relative"
           >
-            {isMobile && (
+            {/* {isMobile && (
               <Button
                 leftIcon={<Menu />}
                 onClick={onOpen}
@@ -227,12 +261,8 @@ const ModulePage = () => {
               >
                 Lessons
               </Button>
-            )}
-            <Box
-              flex="1"
-              minH="0"
-              overscrollBehavior="contain"
-            >
+            )} */}
+            <Box flex="1" minH="0" overscrollBehavior="contain">
               <CanvasArea
                 block={block}
                 onComplete={handleComplete}
@@ -271,13 +301,8 @@ const ModulePage = () => {
               border="1px solid"
               borderColor={sidebarBorder}
               minH="0"
-              overflowY="auto"
             >
-              <Box
-                flex="1"
-                minH="0"
-                overscrollBehavior="contain"
-              >
+              <Box flex="1" minH="0" overscrollBehavior="contain">
                 <LessonSidebar {...sidebarProps} />
               </Box>
             </Box>
@@ -286,7 +311,7 @@ const ModulePage = () => {
           {/* Mobile Drawer */}
           {isMobile && (
             <Drawer
-              isOpen={isOpen}
+              isOpen={lessonSidebarOpen}
               placement="left"
               onClose={onClose}
               trapFocus={false}

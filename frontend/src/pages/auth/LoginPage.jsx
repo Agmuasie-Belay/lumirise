@@ -123,7 +123,7 @@ const LoginPage = () => {
     {/* LEFT PANEL */}
     <Flex
       flex="1"
-      bgGradient="linear(to-r, blue.500, cyan.400)"
+      bgGradient="linear(to-r, blue.800, blue.400)"
       color="white"
       display={{ base: "none", md: "flex" }}
       align="center"

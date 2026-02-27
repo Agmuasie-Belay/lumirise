@@ -16,17 +16,15 @@ const CanvasArea = ({
       borderWidth="1px"
       borderRadius="xl"
       borderBottomRadius={0}
-      p={0}
       bg="white"
-      overflow="auto"
-      // shadow="md"
+      overflowY="auto"
       display="flex"
       flexDirection="column"
       transition="all 0.2s ease"
       _hover={{ cursor:"pointer"}}
     >
       {/* Content Area */}
-      <Box flex="1" bg="gray.50" borderRadius="md" borderBottomRadius="sm">
+      <Box flex="1" bg="gray.50" borderRadius="md" borderBottomRadius="sm" >
         <BlockRenderer
           block={block}
           id={id}

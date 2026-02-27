@@ -178,23 +178,23 @@ const VideoBlock = ({ data, title, onVideoComplete, saveProgressApi }) => {
 
       setProgress(percent);
 
-      checkpoints.forEach((c, idx) => {
-        if (
-          current >= c.time &&
-          !triggeredRef.current.has(idx) &&
-          !answeredRef.current[idx]
-        ) {
-          triggeredRef.current.add(idx);
+      // checkpoints.forEach((c, idx) => {
+      //   if (
+      //     current >= c.time &&
+      //     !triggeredRef.current.has(idx) &&
+      //     !answeredRef.current[idx]
+      //   ) {
+      //     triggeredRef.current.add(idx);
 
-          player.pauseVideo();
+      //     player.pauseVideo();
 
-          const questionData = { ...c, idx };
+      //     const questionData = { ...c, idx };
 
-          currentQuestionRef.current = questionData;
-          setCurrentQuestion(questionData);
-          setSelectedOption(0);
-        }
-      });
+      //     currentQuestionRef.current = questionData;
+      //     setCurrentQuestion(questionData);
+      //     setSelectedOption(0);
+      //   }
+      // });
 
       if (percent >= 85 && !isCompleted) {
         setIsCompleted(true);

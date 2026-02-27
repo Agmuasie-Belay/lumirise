@@ -11,7 +11,12 @@ const contentBlockSchema = new Schema(
     },
     title: { type: String, trim: true },
     order: { type: Number, required: true },
-    content: { type: Schema.Types.Mixed, required: function () {return this.type !== "mcq"; } }, // For video URL, ppt link, markdown text, etc.
+    content: {
+      type: Schema.Types.Mixed,
+      required: function () {
+        return this.type !== "mcq";
+      },
+    }, // For video URL, ppt link, markdown text, etc.
     // MCQ-specific fields
     questions: [
       {
@@ -26,7 +31,27 @@ const contentBlockSchema = new Schema(
         maxScore: { type: Number, default: 0 },
       },
     ],
-
+    checkpoints: [
+      {
+        time: { type: Number, required: true }, // in seconds
+        question: {
+          type: new Schema(
+            {
+              type: {
+                type: String,
+                enum: ["multipleChoice", "trueFalse"],
+                default: "multipleChoice",
+              },
+              text: { type: String, required: true },
+              options: [{ type: String, required: true }],
+              answer: { type: Number, required: true }, // index of correct option
+            },
+            { _id: false },
+          ),
+          required: false,
+        },
+      },
+    ],
     // Optional: total max score for the block (used for grading)
     maxScore: { type: Number, default: 0 },
   },
@@ -37,7 +62,7 @@ contentBlockSchema.pre("validate", function (next) {
   if (this.type === "mcq" && this.questions?.length) {
     this.maxScore = this.questions.reduce(
       (total, q) => total + (q.maxScore || 0),
-      0
+      0,
     );
   }
   next();
@@ -73,12 +98,16 @@ const moduleSchema = new Schema(
 
     objectives: [{ type: String }],
     tags: [{ type: String }],
-    difficulty: { type: String, enum: ["beginner", "intermediate", "advanced"], },
+    difficulty: {
+      type: String,
+      enum: ["beginner", "intermediate", "advanced"],
+    },
     category: { type: String },
 
     lessons: [lessonSchema],
 
-    status: { type: String, 
+    status: {
+      type: String,
       enum: ["Draft", "Pending", "Published", "Archived"],
       default: "Draft",
     },

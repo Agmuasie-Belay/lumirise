@@ -1,4 +1,3 @@
-// src/pages/About.jsx
 import {
   Box,
   Flex,
@@ -24,14 +23,18 @@ import {
   FaTwitter,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
-
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
 
 const About = () => {
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-
+const gradientBg = useColorModeValue(
+    "linear(to-br, #0f172a, #1e3a8a, #0f172a)",
+    "linear(to-br, #020617, #0f172a, #1e293b)"
+  );
   // Brand Colors (Blue & Gold)
   const primaryColor = "blue.600";
   const accentColor = "yellow.400";
@@ -42,8 +45,9 @@ const About = () => {
   };
 
   return (
-    <Box bg={bg} w="full" minH="100vh" py={10}>
+    <Box bg={bg} w="full" minH="100vh" py={10} pb={0}>
       {/* HERO SECTION */}
+      <Navbar />
       <Flex
         direction={{ base: "column", md: "row" }}
         align="center"
@@ -180,11 +184,7 @@ const About = () => {
               variants={fadeUp}
               transition={{ duration: 0.6, delay: idx * 0.2 }}
             >
-              <Box
-                as={feature.icon}
-                boxSize={10}
-                color={accentColor}
-              />
+              <Box as={feature.icon} boxSize={10} color={accentColor} />
               <Heading size="md" color={primaryColor}>
                 {feature.title}
               </Heading>
@@ -207,9 +207,7 @@ const About = () => {
         viewport={{ once: true }}
         variants={fadeUp}
       >
-        <Heading color={primaryColor}>
-          Join Our Growing Community
-        </Heading>
+        <Heading color={primaryColor}>Join Our Growing Community</Heading>
         <Text color="gray.600" maxW="3xl">
           Learn alongside ambitious learners guided by mentors and industry
           professionals.
@@ -233,9 +231,10 @@ const About = () => {
         maxW="6xl"
         mx="auto"
         mt={24}
+        mb={12}
         px={6}
         py={20}
-        bgGradient={`linear(to-r, ${primaryColor}, ${accentColor})`}
+        bgGradient={gradientBg}
         borderRadius="3xl"
         spacing={10}
         initial="hidden"
@@ -252,9 +251,7 @@ const About = () => {
           p={{ base: 6, md: 10 }}
         >
           <VStack spacing={6} textAlign="center">
-            <Heading color="white">
-              Let’s Build Your Future Together
-            </Heading>
+            <Heading color="white">Let’s Build Your Future Together</Heading>
             <Text color="whiteAlpha.900">
               Have questions? Send us a message and our team will respond
               shortly.
@@ -290,6 +287,7 @@ const About = () => {
           </HStack>
         </Box>
       </MotionVStack>
+        <Footer />
     </Box>
   );
 };

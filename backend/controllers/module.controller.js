@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
 export const mapLessonsToSchema = (lessons = []) => {
   return lessons.map((lesson, lIdx) => {
-    let blockOrder = 1; 
+    let blockOrder = 1;
     const blocks = [];
 
     // ===== Lesson Text / Markdown =====
@@ -18,6 +18,7 @@ export const mapLessonsToSchema = (lessons = []) => {
     }
 
     // ===== Video Blocks =====
+
     (lesson.videoLinks || []).filter(Boolean).forEach((url) => {
       blocks.push({
         type: "video",
@@ -26,7 +27,7 @@ export const mapLessonsToSchema = (lessons = []) => {
         content: { url: safeTrim(url) },
       });
     });
-
+    
     // ===== Reading / PPT Blocks =====
     (lesson.readingFiles || []).filter(Boolean).forEach((path) => {
       blocks.push({
@@ -59,7 +60,7 @@ export const mapLessonsToSchema = (lessons = []) => {
         blocks.push({
           type: "mcq",
           title: mcqBlock.title || `MCQ Block ${blockOrder}`,
-          order: blockOrder++, // Use lesson-level order
+          order: blockOrder++,
           questions: mcqBlock.questions.map((q) => ({
             questionText: q.questionText,
             options: q.options.map((o, i) => ({
@@ -84,10 +85,21 @@ export const createModule = async (req, res) => {
   if (req.user.role !== "tutor")
     return res.status(403).json({ success: false });
 
-  const { title, description, objectives, difficulty, category, tags, lessons, bannerUrl } = req.body;
-  console.log("Controller req.body", req.body)
+  const {
+    title,
+    description,
+    objectives,
+    difficulty,
+    category,
+    tags,
+    lessons,
+    bannerUrl,
+  } = req.body;
+  console.log("Controller req.body", req.body);
   if (!title?.trim() || !description?.trim())
-    return res.status(400).json({ success: false, message: "Title and description required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Title and description required" });
 
   try {
     const module = await Module.create({
@@ -107,12 +119,14 @@ export const createModule = async (req, res) => {
       pendingEdit: { isRequested: false, updatedFields: {}, requestedAt: null },
       pendingAction: null,
     });
-    console.log("controller, module mapping", module)
+    console.log("controller, module mapping", module);
     res.status(201).json({ success: true, data: module });
   } catch (error) {
     if (error.code === 11000)
-      return res.status(400).json({ success: false, message: "Module title must be unique" });
-    console.error(error.message)
+      return res
+        .status(400)
+        .json({ success: false, message: "Module title must be unique" });
+    console.error(error.message);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -126,7 +140,10 @@ export const getModules = async (req, res) => {
     if (role === "student") filter.status = "Published";
     else if (role === "tutor") filter.tutor = userId;
 
-    const modules = await Module.find(filter).populate("tutor", "name email role");
+    const modules = await Module.find(filter).populate(
+      "tutor",
+      "name email role",
+    );
     res.status(200).json({ success: true, data: modules });
   } catch (error) {
     console.error("Error fetching modules:", error.message);
@@ -147,7 +164,10 @@ export const getModuleById = async (req, res) => {
     }
 
     const module = await query;
-    if (!module) return res.status(404).json({ success: false, message: "Module not found" });
+    if (!module)
+      return res
+        .status(404)
+        .json({ success: false, message: "Module not found" });
 
     res.status(200).json({ success: true, data: module });
   } catch (error) {
@@ -165,12 +185,16 @@ export const updateModule = async (req, res) => {
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
-    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.tutor.toString() !== req.user.id)
+      return res.status(403).json({ success: false });
     if (module.status !== "Draft")
-      return res.status(400).json({ success: false, message: "Only Draft modules can be edited" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Only Draft modules can be edited" });
 
     // Map lessons to schema
-    if (req.body.lessons) req.body.lessons = mapLessonsToSchema(req.body.lessons);
+    if (req.body.lessons)
+      req.body.lessons = mapLessonsToSchema(req.body.lessons);
 
     Object.assign(module, req.body);
     module.history.push({
@@ -189,19 +213,28 @@ export const updateModule = async (req, res) => {
 // REQUEST APPROVAL (Tutor)
 export const requestApproval = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "tutor") return res.status(403).json({ success: false });
+  if (req.user.role !== "tutor")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
-    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.tutor.toString() !== req.user.id)
+      return res.status(403).json({ success: false });
     if (module.status !== "Draft")
-      return res.status(400).json({ success: false, message: "Only Draft modules can request approval" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Only Draft modules can request approval",
+        });
 
     module.status = "Pending";
     await module.save();
 
-    res.status(200).json({ success: true, message: "Approval requested", data: module });
+    res
+      .status(200)
+      .json({ success: true, message: "Approval requested", data: module });
   } catch (error) {
     console.error("Error requesting approval:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -211,18 +244,23 @@ export const requestApproval = async (req, res) => {
 // APPROVE MODULE (Admin)
 export const approveModule = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+  if (req.user.role !== "admin")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
     if (module.status !== "Pending")
-      return res.status(400).json({ success: false, message: "Module not pending" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Module not pending" });
 
     module.status = "Published";
     await module.save();
 
-    res.status(200).json({ success: true, message: "Module published", data: module });
+    res
+      .status(200)
+      .json({ success: true, message: "Module published", data: module });
   } catch (error) {
     console.error("Error approving module:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -232,18 +270,27 @@ export const approveModule = async (req, res) => {
 // REJECT MODULE (Admin)
 export const rejectModule = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+  if (req.user.role !== "admin")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
     if (module.status !== "Pending")
-      return res.status(400).json({ success: false, message: "Module not pending" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Module not pending" });
 
     module.status = "Draft";
     await module.save();
 
-    res.status(200).json({ success: true, message: "Module reverted to Draft", data: module });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Module reverted to Draft",
+        data: module,
+      });
   } catch (error) {
     console.error("Error rejecting module:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -253,20 +300,33 @@ export const rejectModule = async (req, res) => {
 // REQUEST DELETE (Tutor)
 export const requestDelete = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "tutor") return res.status(403).json({ success: false });
+  if (req.user.role !== "tutor")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
-    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (module.tutor.toString() !== req.user.id)
+      return res.status(403).json({ success: false });
     if (module.status !== "Published")
-      return res.status(400).json({ success: false, message: "Only Published modules can request deletion" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Only Published modules can request deletion",
+        });
 
     module.status = "Pending";
     module.pendingAction = "delete";
     await module.save();
 
-    res.status(200).json({ success: true, message: "Delete request submitted", data: module });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Delete request submitted",
+        data: module,
+      });
   } catch (error) {
     console.error("Error requesting delete:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -276,19 +336,28 @@ export const requestDelete = async (req, res) => {
 // APPROVE DELETE (Admin → ARCHIVE)
 export const approveDeleteRequest = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+  if (req.user.role !== "admin")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
     if (module.pendingAction !== "delete")
-      return res.status(400).json({ success: false, message: "No delete request pending" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No delete request pending" });
 
     module.status = "Archived";
     module.pendingAction = null;
     await module.save();
 
-    res.status(200).json({ success: true, message: "Module archived successfully", data: module });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Module archived successfully",
+        data: module,
+      });
   } catch (error) {
     console.error("Error approving delete:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -299,18 +368,31 @@ export const approveDeleteRequest = async (req, res) => {
 export const requestEdit = async (req, res) => {
   const { id } = req.params;
   if (req.user.role !== "tutor")
-    return res.status(403).json({ success: false, message: "Only tutors can request edits" });
+    return res
+      .status(403)
+      .json({ success: false, message: "Only tutors can request edits" });
 
   const updates = req.body;
   if (!updates || Object.keys(updates).length === 0)
-    return res.status(400).json({ success: false, message: "No changes provided" });
+    return res
+      .status(400)
+      .json({ success: false, message: "No changes provided" });
 
   try {
     const module = await Module.findById(id);
-    if (!module) return res.status(404).json({ success: false, message: "Module not found" });
-    if (module.tutor.toString() !== req.user.id) return res.status(403).json({ success: false });
+    if (!module)
+      return res
+        .status(404)
+        .json({ success: false, message: "Module not found" });
+    if (module.tutor.toString() !== req.user.id)
+      return res.status(403).json({ success: false });
     if (module.status !== "Published")
-      return res.status(400).json({ success: false, message: "Only Published modules can request edits" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Only Published modules can request edits",
+        });
 
     // Map lessons to schema if they are part of the edit request
     if (updates.lessons) updates.lessons = mapLessonsToSchema(updates.lessons);
@@ -343,13 +425,16 @@ export const requestEdit = async (req, res) => {
 // APPROVE EDIT REQUEST (Admin)
 export const approveEditRequest = async (req, res) => {
   const { id } = req.params;
-  if (req.user.role !== "admin") return res.status(403).json({ success: false });
+  if (req.user.role !== "admin")
+    return res.status(403).json({ success: false });
 
   try {
     const module = await Module.findById(id);
     if (!module) return res.status(404).json({ success: false });
     if (!module.pendingEdit?.isRequested)
-      return res.status(400).json({ success: false, message: "No edit request pending" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No edit request pending" });
 
     // Apply the updates (including schema-compliant lessons)
     const updates = module.pendingEdit.updatedFields;
@@ -357,7 +442,11 @@ export const approveEditRequest = async (req, res) => {
     Object.assign(module, updates);
 
     // Reset pendingEdit
-    module.pendingEdit = { isRequested: false, updatedFields: {}, requestedAt: null };
+    module.pendingEdit = {
+      isRequested: false,
+      updatedFields: {},
+      requestedAt: null,
+    };
 
     module.history.push({
       action: "edit-approved",
@@ -368,7 +457,9 @@ export const approveEditRequest = async (req, res) => {
 
     await module.save();
 
-    res.status(200).json({ success: true, message: "Edit request approved", data: module });
+    res
+      .status(200)
+      .json({ success: true, message: "Edit request approved", data: module });
   } catch (error) {
     console.error("Error approving edit:", error.message);
     res.status(500).json({ success: false, message: "Server error" });

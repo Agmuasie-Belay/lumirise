@@ -2,7 +2,7 @@ import { Box, Heading, Text, VStack, Avatar, HStack } from "@chakra-ui/react";
 import Slider from "react-slick";
 
 const Testimonials = () => {
-   const testimonials = [
+  const testimonials = [
     {
       name: "Former Trainee",
       role: "Aspiring Data Analyst",
@@ -37,25 +37,25 @@ const Testimonials = () => {
   };
 
   return (
-    <Box py={20} bg="gray.100" >
-      <Heading textAlign="center" mb={12} fontSize="4xl">
+    <Box py={{ base: 10, md: 20 }}  bg="gray.100" position="relative" top="16">
+      <Heading
+        textAlign="center"
+        mb={10}
+        fontSize={{ base: "2xl", md: "4xl" }}
+        fontWeight="extrabold"
+      >
         Hear From Our Certified Graduates
       </Heading>
-
       <Slider {...sliderSettings}>
         {testimonials.map((t, idx) => (
-          <Box
-            key={idx}
-            display="flex"
-            justifyItems="center" 
-          >
+          <Box key={idx} display="flex" justifyItems="center">
             <Box
               p={8}
               bg="white"
               borderRadius="lg"
               shadow="md"
-              maxW="2xl" 
-              w="full" 
+              maxW="2xl"
+              w="full"
               textAlign="center"
             >
               <VStack spacing={4}>

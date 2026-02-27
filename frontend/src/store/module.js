@@ -3,6 +3,7 @@ import { apiFetch } from "./api";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
+
 export const useModuleStore = create((set, get) => ({
   modules: [],
   currentModule: null,
@@ -78,7 +79,7 @@ export const useModuleStore = create((set, get) => ({
         enrolledStudents: [],
         bannerUrl: newModule.bannerUrl || "",
       };
-      console.log("Module from the store", moduleToSend)
+      
       const data = await apiFetch(`${API_URL}/api/modules`, {
         method: "POST",
         headers: {

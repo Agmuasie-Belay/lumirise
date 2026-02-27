@@ -13,10 +13,10 @@ import { useAuthStore } from "../../store/auth";
 
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
-  const { isOpen: sidebarOpen, onOpen, onClose } = useDisclosure();
   const { currentUser } = useAuthStore();
   const role = currentUser?.role || "guest";
   const location = useLocation();
+  const sidebarDisclosure = useDisclosure();
 
   const sidebarWidth = collapsed ? "5rem" : "16rem";
   const bgMain = useColorModeValue("gray.50", "gray.900");
@@ -26,19 +26,19 @@ export default function Layout({ children }) {
 
   // Auto-close sidebar on route change (for mobile)
   useEffect(() => {
-    if (!isDesktop) onClose();
+    if (!isDesktop) sidebarDisclosure.onClose();
   }, [location.pathname, isDesktop]);
 
   return (
     <Flex h="100vh" bg={bgMain} position="relative" overflow="hidden">
       {/* Mobile overlay */}
-      {!isDesktop && sidebarOpen && (
+      {!isDesktop && sidebarDisclosure.isOpen && (
         <Box
           position="fixed"
           inset="0"
           bg="blackAlpha.600"
           zIndex="overlay"
-          onClick={onClose}
+          onClick={sidebarDisclosure.onClose}
         />
       )}
 
@@ -53,7 +53,7 @@ export default function Layout({ children }) {
         />
       ) : (
         // Mobile Sidebar
-        <Sidebar sidebarOpen={sidebarOpen} onClose={onClose} role={role} />
+        <Sidebar sidebarOpen={sidebarDisclosure.isOpen} onClose={sidebarDisclosure.onClose} role={role} />
       )}
 
       {/* Main content */}
@@ -65,14 +65,19 @@ export default function Layout({ children }) {
         minH="0"
       >
         <Box flexShrink={0} h="16">
-          <Header
+          {/* <Header
             collapsed={collapsed}
             sidebarOpen={sidebarOpen}
             onOpen={onOpen}
+          /> */}
+          <Header
+            variant="layout"
+            collapsed={collapsed}
+            sidebar={sidebarDisclosure}
           />
         </Box>
         <Box flex="1" minH="0" bg={bgMain} overflow="auto" p={4} pr={2}>
-            {children || <Outlet />}
+          {children || <Outlet />}
         </Box>
       </Flex>
     </Flex>
