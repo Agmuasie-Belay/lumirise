@@ -228,10 +228,10 @@ const ModulePage = () => {
           minH="0"
           gap={4}
           sx={{
-            scrollbarWidth: "none", // Firefox
-            msOverflowStyle: "none", // IE/Edge legacy
+            scrollbarWidth: "none", 
+            msOverflowStyle: "none", 
             "&::-webkit-scrollbar": {
-              display: "none", // Chrome, Safari
+              display: "none", 
             },
           }}
         >
@@ -251,17 +251,6 @@ const ModulePage = () => {
             shadow="sm"
             position="relative"
           >
-            {/* {isMobile && (
-              <Button
-                leftIcon={<Menu />}
-                onClick={onOpen}
-                variant="ghost"
-                justifyContent="flex-start"
-                width="100%"
-              >
-                Lessons
-              </Button>
-            )} */}
             <Box flex="1" minH="0" overscrollBehavior="contain">
               <CanvasArea
                 block={block}

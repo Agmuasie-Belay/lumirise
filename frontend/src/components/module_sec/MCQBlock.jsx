@@ -93,7 +93,7 @@ const MCQBlock = ({ data, blockId, onBlockCompleted, enrollmentId , progress}) =
       bg="white"
     >
       <Heading size="md" mb={6}>
-        Quiz Assessment
+        {data.title ? data.title : "Quiz Assessment"}
       </Heading>
 
       <VStack spacing={6} align="stretch">

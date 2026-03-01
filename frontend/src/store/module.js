@@ -61,6 +61,7 @@ export const useModuleStore = create((set, get) => ({
   // Create module (Tutor)
   // -------------------------
   createModule: async (newModule) => {
+    console.log("New Module", newModule)
     try {
       const tutorId = JSON.parse(localStorage.getItem("user"))?.id;
       const userRole = JSON.parse(localStorage.getItem("role"));

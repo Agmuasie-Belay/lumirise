@@ -8,11 +8,10 @@ const BlockRenderer = ({
   block,
   id,
   onComplete,
-  isCompleted,
   enrollmentId,
-  lesson,
   progress,
 }) => {
+  console.log("Rendering BlockRenderer for block:", block);
   switch (block.type) {
     case "video":
       return (
@@ -25,7 +24,7 @@ const BlockRenderer = ({
     case "ppt":
       return <PPTBlock data={block.content} title={block.title} />;
     case "markdown":
-      return <MarkdownBlock data={block.content} />;
+      return <MarkdownBlock data={block} />;
     case "mcq":
       return (
         <MCQBlock

@@ -1,4 +1,4 @@
-import { Box, Heading, Button, VStack, Divider } from "@chakra-ui/react";
+import { Box, Button} from "@chakra-ui/react";
 import BlockRenderer from "./BlockRenderer";
 const CanvasArea = ({
   block,

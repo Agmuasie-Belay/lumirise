@@ -12,16 +12,23 @@ import {
 import ReactMarkdown from "react-markdown";
 
 const MarkdownBlock = ({ data }) => {
+  console.log("Rendering MarkdownBlock with content:", data);
   return (
     <Box
       p={6}
       bg="white"
       borderRadius="xl"
-      borderBottomRadius={0} 
+      borderBottomRadius={0}
       border="1px solid"
       borderColor="gray.200"
       _dark={{ bg: "gray.700", borderColor: "gray.600" }}
     >
+      {data.title && (<>
+        <Heading size="lg" mb={4} color="blue.500">
+          {data.title}
+        </Heading>
+        <Divider borderColor="blue.400" mb={4} /></>
+      )}
       <ReactMarkdown
         components={{
           h1: ({ node, ...props }) => (
@@ -85,7 +92,7 @@ const MarkdownBlock = ({ data }) => {
           ),
         }}
       >
-        {data}
+        {data.content}
       </ReactMarkdown>
     </Box>
   );

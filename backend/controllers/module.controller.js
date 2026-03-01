@@ -2,85 +2,63 @@ import Module from "../models/module.model.js";
 import mongoose from "mongoose";
 
 const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
+
 export const mapLessonsToSchema = (lessons = []) => {
-  return lessons.map((lesson, lIdx) => {
-    let blockOrder = 1;
-    const blocks = [];
+  return lessons.map((lesson, lIdx) => ({
+    title: safeTrim(lesson.title) || `Lesson ${lIdx + 1}`,
+    order: lIdx + 1,
+    blocks: (lesson.blocks || []).map((block, bIdx) => {
+      const base = {
+        type: block.type,
+        title: safeTrim(block.title) || `${block.type} ${bIdx + 1}`,
+        order: block.order || bIdx + 1,
+      };
 
-    // ===== Lesson Text / Markdown =====
-    if (lesson.body?.trim()) {
-      blocks.push({
-        type: "markdown",
-        title: "Lesson Text",
-        order: blockOrder++,
-        content: safeTrim(lesson.body),
-      });
-    }
+      switch (block.type) {
+        case "markdown":
+          return {
+            ...base,
+            content: safeTrim(block.body || ""),
+          };
 
-    // ===== Video Blocks =====
+        case "video":
+        case "ppt":
+          return {
+            ...base,
+            content: { url: safeTrim(block.url || "") },
+          };
 
-    (lesson.videoLinks || []).filter(Boolean).forEach((url) => {
-      blocks.push({
-        type: "video",
-        title: `Video ${blockOrder}`,
-        order: blockOrder++,
-        content: { url: safeTrim(url) },
-      });
-    });
-    
-    // ===== Reading / PPT Blocks =====
-    (lesson.readingFiles || []).filter(Boolean).forEach((path) => {
-      blocks.push({
-        type: "ppt",
-        title: `Reading ${blockOrder}`,
-        order: blockOrder++,
-        content: { path: safeTrim(path) },
-      });
-    });
+        case "task":
+          return {
+            ...base,
+            content: {
+              instructions: safeTrim(block.description || ""),
+              submissionType: "text",
+              required: true,
+            },
+          };
 
-    // ===== Tasks =====
-    (lesson.tasks || []).forEach((t) => {
-      if (t.title?.trim() && t.description?.trim()) {
-        blocks.push({
-          type: "task",
-          title: safeTrim(t.title),
-          order: blockOrder++,
-          content: {
-            instructions: safeTrim(t.description),
-            submissionType: "text",
-            required: t.required ?? true,
-          },
-        });
-      }
-    });
-
-    // ===== MCQ Blocks =====
-    (lesson.mcqBlocks || []).forEach((mcqBlock) => {
-      if (Array.isArray(mcqBlock.questions) && mcqBlock.questions.length > 0) {
-        blocks.push({
-          type: "mcq",
-          title: mcqBlock.title || `MCQ Block ${blockOrder}`,
-          order: blockOrder++,
-          questions: mcqBlock.questions.map((q) => ({
-            questionText: q.questionText,
-            options: q.options.map((o, i) => ({
-              text: o,
-              isCorrect: i === q.correctAnswerIndex,
+        case "mcq":
+          return {
+            ...base,
+            questions: (block.questions || []).map((q) => ({
+              questionText: q.questionText,
+              options: (q.options || []).map((o, i) => ({
+                text: o,
+                isCorrect: i === q.correctAnswerIndex,
+              })),
+              type: "mcq",
+              maxScore: 1,
             })),
-            type: q.type || "mcq",
-            maxScore: q.maxScore ?? 1,
-          })),
-        });
-      }
-    });
+          };
 
-    return {
-      title: safeTrim(lesson.title) || `Lesson ${lIdx + 1}`,
-      order: lIdx + 1,
-      blocks,
-    };
-  });
+        default:
+          return base;
+      }
+    }),
+  }));
 };
+
 export const createModule = async (req, res) => {
   if (req.user.role !== "tutor")
     return res.status(403).json({ success: false });
@@ -95,7 +73,6 @@ export const createModule = async (req, res) => {
     lessons,
     bannerUrl,
   } = req.body;
-  console.log("Controller req.body", req.body);
   if (!title?.trim() || !description?.trim())
     return res
       .status(400)
@@ -119,7 +96,6 @@ export const createModule = async (req, res) => {
       pendingEdit: { isRequested: false, updatedFields: {}, requestedAt: null },
       pendingAction: null,
     });
-    console.log("controller, module mapping", module);
     res.status(201).json({ success: true, data: module });
   } catch (error) {
     if (error.code === 11000)

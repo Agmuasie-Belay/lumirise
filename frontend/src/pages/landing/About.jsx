@@ -28,6 +28,7 @@ import Footer from "./Footer";
 
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
+import { useRef, useEffect } from "react";
 
 const About = () => {
   // Backgrounds
@@ -47,10 +48,38 @@ const About = () => {
     visible: { opacity: 1, y: 0 },
   };
 
+  const progressRef = useRef(null);
+  
+    useEffect(() => {
+      const updateProgress = () => {
+        const scrollTop = window.scrollY;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = (scrollTop / scrollHeight) * 100;
+        if (progressRef.current) {
+          progressRef.current.style.width = `${progress}%`;
+        }
+      };
+  
+      window.addEventListener("scroll", updateProgress);
+      return () => window.removeEventListener("scroll", updateProgress);
+    }, []);
+  
+  
   return (
     <Box bg={bg} w="full" minH="100vh" py={10} pb={0}>
       {/* HERO SECTION */}
       <Navbar />
+      <Box
+          ref={progressRef}
+          position="fixed"
+          top="60px"
+          left={0}
+          height="4px"
+          bgGradient="linear(to-r, #a8ab00, #f2ff00)"
+          zIndex={9999}
+          width="0%"
+          transition="width 0.2s ease-out"
+        />
       <Flex
         direction={{ base: "column", md: "row" }}
         align="center"
