@@ -14,9 +14,10 @@ const MotionBox = motion(Box);
 
 const CTA = () => {
     const gradientBg = useColorModeValue(
-        "linear(to-br, #0f172a, #1e3a8a, #0f172a)",
-        "linear(to-br, #020617, #0f172a, #1e293b)"
-      );
+    "linear(to-br, #0A66C2, #0056A0, #0A66C2)",
+    "linear(to-br, #0a3a66, #0056A0, #0A66C2)"
+  );
+
   return (
     <Box
       position="relative"

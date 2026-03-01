@@ -1,72 +1,65 @@
 import { Box } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
-import Testimonials from "./Testimonials";
-import FeaturedModules from "./FeaturedModules";
+import { useEffect, useRef, lazy, Suspense } from "react";
 import Navbar from "./Navbar";
-import Hero from "./Hero";
-import CTA from "./CTA";
-import Footer from "./Footer";
+
+const Hero = lazy(() => import("./Hero"));
+const FeaturedModules = lazy(() => import("./FeaturedModules"));
+const Testimonials = lazy(() => import("./Testimonials"));
+const CTA = lazy(() => import("./CTA"));
+const Footer = lazy(() => import("./Footer"));
 
 const LandingPage = () => {
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  // Track scroll progress
-  const handleScroll = () => {
-    const scrollTop = window.scrollY;
-    const scrollHeight =
-      document.documentElement.scrollHeight - window.innerHeight;
-    const progress = (scrollTop / scrollHeight) * 100;
-    setScrollProgress(progress);
-  };
+  const progressRef = useRef(null);
 
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const updateProgress = () => {
+      const scrollTop = window.scrollY;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / scrollHeight) * 100;
+      if (progressRef.current) {
+        progressRef.current.style.width = `${progress}%`;
+      }
+    };
+
+    window.addEventListener("scroll", updateProgress);
+    return () => window.removeEventListener("scroll", updateProgress);
   }, []);
 
   return (
     <Box
       position="relative"
-      overflow="hidden"
-      minH="100vh"
+      minH="0"
       display="flex"
       flexDirection="column"
+      bg="#F4F8F9"
       sx={{
-        scrollbarWidth: "none", // Firefox
-        msOverflowStyle: "none", // IE/Edge legacy
-        "&::-webkit-scrollbar": {
-          display: "none", // Chrome, Safari
-        },
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        "&::-webkit-scrollbar": { display: "none" },
       }}
     >
       <Navbar />
+
       {/* Scroll Progress Bar */}
       <Box
+        ref={progressRef}
         position="fixed"
-        top={16}
+        top="60px"
         left={0}
-        width={`${scrollProgress}%`}
-        height="5px"
-        bg="yellow.400"
-        zIndex={50}
-        transition="width 0.3s ease-out"
+        height="4px"
+        bgGradient="linear(to-r, #a8ab00, #f2ff00)"
+        zIndex={9999}
+        width="0%"
+        transition="width 0.2s ease-out"
       />
 
-      {/* Hero Section */}
-      <Hero />
-
-      {/* Featured Modules */}
-      <FeaturedModules />
-
-      {/* Testimonials Section */}
-      <Testimonials />
-
-      {/* Call-to-Action */}
-      <CTA />
-
-      {/* Footer */}
-
-      <Footer />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Hero />
+        <FeaturedModules />
+        <Testimonials />
+        <CTA />
+        <Footer />
+      </Suspense>
     </Box>
   );
 };

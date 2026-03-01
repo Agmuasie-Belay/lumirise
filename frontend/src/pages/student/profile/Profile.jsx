@@ -168,14 +168,14 @@ export default function Profile() {
               </FormControl>
             )}
 
-            <FormControl>
+           {user.role === "tutor" && ( <FormControl>
               <FormLabel>Bio</FormLabel>
               <Textarea
                 value={user.bio || ""}
                 isReadOnly={!editMode}
                 onChange={(e) => handleChange("bio", e.target.value)}
               />
-            </FormControl>
+            </FormControl>)}
 
             <Divider />
 

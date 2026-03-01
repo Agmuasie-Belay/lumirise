@@ -1,51 +1,62 @@
-import { Box, Button, Container, Heading, Text, VStack, useColorModeValue } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Container,
+  Heading,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const MotionBox = motion(Box);
 
 const Hero = () => {
-  // Color mode adjustments
-  const glassBg = useColorModeValue("rgba(255,255,255,0.08)", "rgba(255,255,255,0.04)");
-  const glassBorder = useColorModeValue("rgba(255,255,255,0.25)", "rgba(255,255,255,0.12)");
-  const gradientBg = useColorModeValue(
-    "linear(to-br, #0f172a, #1e3a8a, #0f172a)",
-    "linear(to-br, #020617, #0f172a, #1e293b)"
+  const glassBg = useColorModeValue(
+    "rgba(255,255,255,0.05)",
+    "rgba(255,255,255,0.03)"
+  );
+  const glassBorder = useColorModeValue(
+    "rgba(255,255,255,0.2)",
+    "rgba(255,255,255,0.1)"
   );
 
+  const gradientBg = "linear(to-br, #0A66C2, #0056A0, #0A66C2)";
+
   return (
-    <Box position="relative" top="16">
-      {/* Hero Section */}
+    <Box position="relative" >
       <MotionBox
         position="relative"
         bgGradient={gradientBg}
-        backgroundSize="200% 200%"
-        //animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-        //transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
         py={{ base: 24, md: 40 }}
         overflow="hidden"
-         initial={{ opacity: 0, y: -50, scale: 1.05 }} // start slightly up and smaller
-        animate={{ opacity: 1, y: 0, scale: 1 }} // slide down to normal
-        transition={{ duration: 1, ease: "easeOut" }}
-       
+        initial={{ opacity: 0, y: -40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: .5, ease: "easeOut" }}
       >
-        {/* Subtle Floating Particles */}
-        <Box position="absolute" inset={0} zIndex={0} pointerEvents="none">
-          {[...Array(25)].map((_, i) => (
+        {/* Floating Glowing Particles */}
+        {/* <Box position="absolute" inset={0} zIndex={0} pointerEvents="none">
+          {[...Array(35)].map((_, i) => (
             <MotionBox
               key={i}
               position="absolute"
-              w="9px"
-              h="9px"
+              w="6px"
+              h="6px"
               borderRadius="full"
-              bg="rgba(255,255,255,0.4)"
+              bg={i % 2 === 0 ? "#0A66C2" : "#00BFFF"} // LinkedIn Blue & cyan
+              boxShadow={`0 0 12px ${i % 2 === 0 ? "#0A66C2" : "#00BFFF"}`}
               top={`${Math.random() * 100}%`}
               left={`${Math.random() * 100}%`}
-              animate={{ y: [0, -20, 0], opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 6 + Math.random() * 4, repeat: Infinity, ease: "easeInOut" }}
+              animate={{ y: [0, -30, 0], opacity: [0.3, 0.85, 0.3] }}
+              transition={{
+                duration: 5 + Math.random() * 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             />
           ))}
-        </Box>
+        </Box> */}
 
         <Container maxW="container.xl" position="relative" zIndex={1}>
           <Box
@@ -55,44 +66,76 @@ const Hero = () => {
             borderColor={glassBorder}
             borderRadius="2xl"
             p={{ base: 8, md: 12 }}
-            boxShadow="0 20px 60px rgba(0,0,0,0.35)"
+            boxShadow="0 20px 60px rgba(0,0,0,0.5)"
           >
             <VStack spacing={6} align="center" textAlign="center">
-              {/* Heading with Radial Glow */}
+              {/* Heading Glow */}
               <Box position="relative" display="inline-block">
                 <Box
                   position="absolute"
                   top="50%"
                   left="50%"
                   transform="translate(-50%, -50%)"
-                  w="500px"
-                  h="500px"
-                  bg="radial-gradient(circle, rgba(255,215,0,0.25) 0%, rgba(255,215,0,0.08) 40%, transparent 70%)"
+                  w="450px"
+                  h="450px"
+                  bg="radial-gradient(circle, rgba(191, 194, 10, 0.3) 0%, rgba(251, 255, 0, 0.15) 40%, transparent 50%)"
                   filter="blur(60px)"
                   zIndex={0}
                 />
-                <Heading
-                  position="relative"
-                  zIndex={1}
-                  fontSize={{ base: "3xl", md: "5xl" }}
-                  fontWeight="extrabold"
-                  letterSpacing="tight"
-                  color="white"
+                <MotionBox
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.1 }}
                 >
-                  Bridge the gap. Rise beyond.
-                </Heading>
+                  <Heading
+                    position="relative"
+                    zIndex={1}
+                    fontSize={{ base: "3xl", md: "5xl" }}
+                    fontWeight="extrabold"
+                    letterSpacing="tight"
+                    bgGradient="linear(to-r, #c29d0a, #ddff00)"
+                    bgClip="text"
+                  >
+                    Bridge the gap. <br/>Rise beyond.
+                  </Heading>
+                </MotionBox>
               </Box>
 
               {/* Subtitle */}
-              <Text fontSize={{ base: "md", md: "xl" }} maxW="2xl" color="white">
-                Raising standards and equipping Ethiopian learners with practical digital mastery and career-ready confidence.
-              </Text>
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <Text
+                  fontSize={{ base: "md", md: "xl" }}
+                  maxW="2xl"
+                  color="rgba(255,255,255,0.9)"
+                >
+                  Equip learners with in-demand skills, mentorship, and hands-on projects—building confidence and creating career-ready innovators.
+                </Text>
+              </MotionBox>
 
               {/* Call to Action */}
-              <MotionBox initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.6 }}>
+              <MotionBox
+                initial={{ opacity: 0, scale: 0.75 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+              >
                 <Link to="/signup">
-                  <Button colorScheme="yellow" size="lg" _hover={{ bg: "yellow.400" }}>
-                    Get Started
+                  <Button
+                    size="lg"
+                    bg="#bcb904" // Cyan CTA for contrast
+                    color="black"
+                    _hover={{
+                      bg: "#d4ff00",
+                      boxShadow: "0 0 12px #fffb00",
+                    }}
+                    boxShadow="0 0 4px #00BFFF"
+                  >
+                    Start Your Journey
                   </Button>
                 </Link>
               </MotionBox>

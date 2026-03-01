@@ -32,9 +32,9 @@ function Navbar() {
 
   return (
     <Box
-      bg="blue.900"
+      bg="#0A66C2" // LinkedIn Blue
       borderBottom="1px solid"
-      borderColor="blue.200"
+      borderColor="rgba(0,191,255,0.1)" // subtle cyan accent
       position="fixed"
       top="0"
       w="full"
@@ -48,7 +48,7 @@ function Navbar() {
             fontSize="xl"
             fontWeight="extrabold"
             letterSpacing="tight"
-            bgGradient="linear(to-r, yellow.500, yellow.400)"
+            bgGradient="linear(to-r, #ffc400, #b9c20a)" // cyan → LinkedIn blue
             bgClip="text"
           >
             <Link to="/">LumiRise</Link>
@@ -65,8 +65,8 @@ function Navbar() {
                     <Text
                       fontSize="sm"
                       fontWeight="medium"
-                      color={isActive ? "yellow.500" : "gray.300"}
-                      _hover={{ color: "white" }}
+                      color={isActive ? "#fff200" : "rgba(255,255,255,0.85)"}
+                      _hover={{ color: "#fbff00" }}
                       transition="color 0.2s ease"
                     >
                       {link.label}
@@ -82,7 +82,7 @@ function Navbar() {
                       left="0"
                       right="0"
                       height="2px"
-                      bg="blue.500"
+                      bg="#00BFFF" // cyan underline for active
                       borderRadius="full"
                       transition={{
                         type: "spring",
@@ -99,15 +99,28 @@ function Navbar() {
               <Button
                 size="sm"
                 variant="solid"
-                colorScheme="blue"
+                bg="#00305a"
+                  _hover={{ bg: "#0256ab" }}
+                color="white"
                 borderRadius="full"
                 px={6}
+                border="1px solid"
               >
                 Login
               </Button>
             </Link>
+
             <Link to="/signup">
-              <Button size="sm" colorScheme="yellow" borderRadius="full" px={6}>
+              <Button
+                size="sm"
+
+                  bg="#ffd900"
+                  color="#0A66C2"
+                  _hover={{ bg: "#ffea00" }}
+                borderRadius="full"
+                px={6}
+               
+              >
                 Sign up
               </Button>
             </Link>
@@ -118,7 +131,7 @@ function Navbar() {
             display={{ base: "flex", md: "none" }}
             icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
             color="white"
-                      variant="ghost"
+            variant="ghost"
             onClick={isOpen ? onClose : onOpen}
             aria-label="Toggle Navigation"
           />
@@ -128,7 +141,7 @@ function Navbar() {
       {/* MOBILE DRAWER */}
       <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent bg="#0A66C2" color="white">
           <DrawerBody mt={10}>
             <VStack align="start" spacing={6}>
               {links.map((link) => (
@@ -137,15 +150,26 @@ function Navbar() {
                 </Link>
               ))}
 
-              <Divider />
+              <Divider borderColor="rgba(0,191,255,0.2)" />
 
               <Link to="/login" onClick={onClose}>
-                <Button variant="ghost" w="full">
+                <Button
+                  variant="solid"
+                  w="full"
+                  bg="#00305a"
+                  _hover={{ bg: "#0256ab" }}
+                >
                   Login
                 </Button>
               </Link>
+
               <Link to="/signup" onClick={onClose}>
-                <Button colorScheme="blue" w="full">
+                <Button
+                  w="full"
+                  bg="#fffb00"
+                  color="#0A66C2"
+                  _hover={{ bg: "#ffea00" }}
+                >
                   Signup
                 </Button>
               </Link>

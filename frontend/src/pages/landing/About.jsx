@@ -25,19 +25,22 @@ import {
 import { motion } from "framer-motion";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
 
 const About = () => {
+  // Backgrounds
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-const gradientBg = useColorModeValue(
-    "linear(to-br, #0f172a, #1e3a8a, #0f172a)",
-    "linear(to-br, #020617, #0f172a, #1e293b)"
+  const gradientBg = useColorModeValue(
+    "linear(to-br, #0A66C2, #0073B1, #0A66C2)", 
+    "linear(to-br, #074a8e, #005A99, #013970)"
   );
-  // Brand Colors (Blue & Gold)
-  const primaryColor = "blue.600";
-  const accentColor = "yellow.400";
+
+  // Brand Colors
+  const primaryColor = "#0A66C2";
+  const accentColor = "#F3D97C";  
 
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -75,7 +78,7 @@ const gradientBg = useColorModeValue(
             One Skill at a Time
           </Heading>
 
-          <Text fontSize={{ base: "md", md: "lg" }} color="gray.600">
+          <Text fontSize={{ base: "md", md: "lg" }} color="gray.300">
             Lumirise Career Accelerator LMS equips learners with in-demand
             skills, hands-on projects, and personalized guidance to launch and
             grow their careers.
@@ -84,7 +87,7 @@ const gradientBg = useColorModeValue(
           <Button
             size="lg"
             bg={accentColor}
-            color="black"
+            color={primaryColor}
             _hover={{ transform: "scale(1.05)" }}
           >
             Explore Courses
@@ -135,7 +138,7 @@ const gradientBg = useColorModeValue(
             <Heading size="lg" color={primaryColor}>
               {item.title}
             </Heading>
-            <Text color="gray.600">{item.text}</Text>
+            <Text color="gray.300">{item.text}</Text>
           </MotionVStack>
         ))}
       </SimpleGrid>
@@ -188,7 +191,7 @@ const gradientBg = useColorModeValue(
               <Heading size="md" color={primaryColor}>
                 {feature.title}
               </Heading>
-              <Text color="gray.600">{feature.desc}</Text>
+              <Text color="gray.300">{feature.desc}</Text>
             </MotionVStack>
           ))}
         </SimpleGrid>
@@ -208,7 +211,7 @@ const gradientBg = useColorModeValue(
         variants={fadeUp}
       >
         <Heading color={primaryColor}>Join Our Growing Community</Heading>
-        <Text color="gray.600" maxW="3xl">
+        <Text color="gray.300" maxW="3xl">
           Learn alongside ambitious learners guided by mentors and industry
           professionals.
         </Text>
@@ -231,11 +234,11 @@ const gradientBg = useColorModeValue(
         maxW="6xl"
         mx="auto"
         mt={24}
-        mb={12}
+        mb={{ base: 0, md: 12 }}
         px={6}
         py={20}
         bgGradient={gradientBg}
-        borderRadius="3xl"
+        borderRadius={{ base: "0", md: "3xl" }}
         spacing={10}
         initial="hidden"
         whileInView="visible"
@@ -265,7 +268,7 @@ const gradientBg = useColorModeValue(
             <Button
               size="lg"
               bg={accentColor}
-              color="black"
+              color={primaryColor}
               _hover={{ transform: "scale(1.05)" }}
               w="full"
             >
@@ -287,7 +290,8 @@ const gradientBg = useColorModeValue(
           </HStack>
         </Box>
       </MotionVStack>
-        <Footer />
+
+      <Footer />
     </Box>
   );
 };
